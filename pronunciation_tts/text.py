@@ -11,7 +11,8 @@ import re
 # {{c1::answer}} / {{c1::answer::hint}} ; answers may span lines
 _NO_BRACES = r"(?:(?!\{\{|\}\}).)*?"
 _CLOZE_RE = re.compile(r"\{\{c\d+::(" + _NO_BRACES + r")(?:::" + _NO_BRACES + r")?\}\}", re.DOTALL)
-_SOUND_RE = re.compile(r"\[sound:[^\]]*\]")
+# leading whitespace included so "petty [sound:x.mp3]." -> "petty."
+_SOUND_RE = re.compile(r"\s*\[sound:[^\]]*\](?=(\w)?)")
 _BR_RE = re.compile(r"<\s*(br|/p|/div|/li)\b[^>]*>", re.IGNORECASE)
 _STYLE_SCRIPT_RE = re.compile(r"<(style|script)\b.*?</\1\s*>", re.IGNORECASE | re.DOTALL)
 _TAG_RE = re.compile(r"<[^>]+>")
@@ -32,7 +33,7 @@ def field_to_speech_text(field_html: str) -> str:
         if new == text:
             break
         text = new
-    text = _SOUND_RE.sub(" ", text)
+    text = _SOUND_RE.sub(lambda m: " " if m.group(1) else "", text)
     text = _STYLE_SCRIPT_RE.sub(" ", text)
     text = _BR_RE.sub(" ", text)
     text = _TAG_RE.sub("", text)

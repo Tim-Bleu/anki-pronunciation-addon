@@ -42,6 +42,15 @@ All downloads go through `net.request`. Never use `urllib`, `requests`,
 
 ## Behavioural rules
 - Never insert audio into a field rendered on a front template (`core.field_on_front`); the dialog disables OK and `_run` re-checks.
+- Exception, placement `"cloze"` (cloze note types only): the tag goes *inside* the deletion,
+  `{{c1::petty [sound:pron_….mp3]::kleinlich}}` (before the hint). Anki hides the active deletion
+  on the front, so it plays only on the back (verified via `card.question_av_tags()` in
+  `tests/test_anki_integration.py`). Caveat: on card c2 the deletion c1 is visible on the front,
+  so with several cloze numbers its audio plays there → dialog hint + `askUser` (default no).
+  `cloze_text`: `"sentence"` (whole sentence, in the first deletion of each number) or `"word"`
+  (each deletion gets audio of its own answer).
+- `text.field_to_speech_text` must ignore our inserted tags (including their leading space), so the
+  cache key stays the same after insertion.
 - Cloze text: answers are spoken in full (`{{c1::x::hint}}` → `x`).
 - Re-running replaces only this add-on's own tags (`[sound:pron_….mp3]`), never user audio.
 - Same text+voice+speed+provider → same filename → cached, no new download.

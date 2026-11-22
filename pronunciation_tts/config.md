@@ -8,4 +8,4 @@
 - `replace_existing_audio`: `true` = vorher von diesem Add-on eingefügte Audios im Zielfeld ersetzen.
 - `play_after_insert`: Audio nach dem Einfügen einmal zur Kontrolle abspielen.
 - `shortcut_generate` / `shortcut_settings`: Tastenkürzel im Editor.
-- `note_types`: Gemerkte Einstellungen pro Notiztyp (Quellfeld, Zielfeld, Stimme). Wird vom Add-on selbst gepflegt.
+- `note_types`: Gemerkte Einstellungen pro Notiztyp (Quellfeld, Zielfeld, Stimme, Einfügeort `placement`: `"field"` = in ein Feld der Rückseite, `"cloze"` = direkt in die Lücke; `cloze_text`: `"sentence"` oder `"word"`). Wird vom Add-on selbst gepflegt, am einfachsten über den zweiten Lautsprecher-Knopf ändern.

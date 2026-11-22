@@ -89,3 +89,76 @@ def default_fields(
     if back_only:
         return source, back_only[0]
     return source, source
+
+
+# ---------------------------------------------------------------- audio inside cloze deletions
+#
+# ``{{c1::petty [sound:x.mp3]::kleinlich}}``: on card 1 the deletion is hidden on
+# the front, so Anki only plays x.mp3 on the back. Caveat: on *other* cards
+# (c2, c3 …) this deletion is shown as plain text on the front, so its audio
+# would play there – callers warn about notes with several cloze numbers.
+
+_NB = r"(?:(?!\{\{|\}\}).)*?"
+_CLOZE_PARTS_RE = re.compile(r"\{\{c(\d+)::(" + _NB + r")(?:::(" + _NB + r"))?\}\}", re.DOTALL)
+
+PLACEMENT_FIELD = "field"
+PLACEMENT_CLOZE = "cloze"
+CLOZE_TEXT_SENTENCE = "sentence"
+CLOZE_TEXT_WORD = "word"
+
+
+def strip_own_sound_tags(field_html: str) -> str:
+    return _OWN_SOUND_RE.sub("", field_html or "")
+
+
+def cloze_answers(field_html: str) -> list[tuple[int, str]]:
+    """``(cloze number, spoken answer text)`` for every (innermost) deletion, in order."""
+    from .text import field_to_speech_text
+
+    return [
+        (int(m.group(1)), field_to_speech_text(m.group(2)))
+        for m in _CLOZE_PARTS_RE.finditer(field_html or "")
+    ]
+
+
+def cloze_numbers(field_html: str) -> set[int]:
+    return {num for num, _ in cloze_answers(field_html)}
+
+
+def insert_sound_in_clozes(field_html: str, pick, replace_existing: bool = True) -> str:
+    """Put a sound tag at the end of each deletion's answer (before ``::hint``).
+
+    ``pick(number, answer_text, first_of_number)`` returns the media filename
+    for that deletion, or ``None`` to leave it untouched.
+    """
+    from .text import field_to_speech_text
+
+    html = strip_own_sound_tags(field_html) if replace_existing else (field_html or "")
+    seen: set[int] = set()
+
+    def repl(m: re.Match) -> str:
+        num = int(m.group(1))
+        answer, hint = m.group(2), m.group(3)
+        first = num not in seen
+        seen.add(num)
+        fname = pick(num, field_to_speech_text(answer), first)
+        if fname:
+            if not re.fullmatch(r"[A-Za-z0-9_.-]+", fname):
+                raise ValueError("unsafe media filename")
+            tag = f"[sound:{fname}]"
+            if tag not in answer:
+                answer = f"{answer.rstrip()} {tag}" if answer.strip() else tag
+        hint_part = f"::{hint}" if hint is not None else ""
+        return f"{{{{c{num}::{answer}{hint_part}}}}}"
+
+    return _CLOZE_PARTS_RE.sub(repl, html)
+
+
+def field_is_cloze_rendered(field: str, front_templates) -> bool:
+    """True if a front template renders ``field`` with the ``cloze:`` filter."""
+    for t in front_templates:
+        for raw in _TEMPLATE_TAG_RE.findall(t or ""):
+            parts = [p.strip() for p in raw.strip().split(":")]
+            if len(parts) >= 2 and parts[-1] == field and "cloze" in parts[:-1]:
+                return True
+    return False

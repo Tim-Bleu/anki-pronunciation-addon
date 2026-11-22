@@ -26,6 +26,27 @@ Beim ersten Mal pro Notiztyp öffnet sich der Dialog:
 - **Audio einfügen in Feld** – ein Feld, das **nur auf der Rückseite** steht (z. B. „Back“, „Back Extra“ oder ein eigenes Feld „Audio“). Felder der Vorderseite werden abgelehnt, damit das Audio nichts verrät.
 - **Sprache / Akzent** – z. B. Englisch (Britisch / Amerikanisch / Australisch / Indisch …), Französisch (Frankreich / Kanada), Spanisch (Spanien / Mexiko), Portugiesisch (Brasilien / Portugal) u. v. m.
 
+### Audio direkt in die Lücke (Lückentext)
+Bei Lückentext-Notizen kannst du im Dialog unter **„Audio einfügen“** die Option
+**„Direkt in die Lücke (im Lückentext)“** wählen. Dann wird aus
+
+    Stop being so {{c1::petty::kleinlich}}.
+
+automatisch
+
+    Stop being so {{c1::petty [sound:pron_en-GB_….mp3]::kleinlich}}.
+
+Ein extra Feld brauchst du dafür nicht. Weil die Lücke auf der Vorderseite verdeckt ist, hörst
+du das Audio erst nach dem Aufdecken. Unter **„Vorlesen“** wählst du:
+- **Ganzen Satz vorlesen** – „Stop being so petty.“
+- **Nur das Lückenwort vorlesen** – „petty“ (jede Lücke bekommt ihr eigenes Audio)
+
+Hinweis: Hat eine Notiz mehrere Lücken-*Nummern* (`c1`, `c2` …), ist auf der Karte für c1
+die Lücke c2 als normaler Text sichtbar, und deren Audio würde schon auf der Vorderseite
+abgespielt. Das Add-on fragt in diesem Fall nach. Für solche Notizen ist „In ein Feld der
+Rückseite“ (z. B. „Back Extra“) die bessere Wahl. Mehrere Lücken mit *derselben* Nummer
+(`{{c1::…}} … {{c1::…}}`) sind kein Problem.
+
 Tipp für Notiztyp „Einfach (mit umgekehrter Karte)“: Hier stehen beide Felder auf einer
 Vorderseite. Lege ein zusätzliches Feld `Audio` an und füge `{{Audio}}` nur in die
 Rückseite der passenden Kartenvorlage ein.

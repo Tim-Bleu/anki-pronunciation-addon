@@ -92,9 +92,12 @@ def integration(col, monkeypatch):
 
     played, warnings, updated = [], [], []
     monkeypatch.setattr(ei, "QueryOp", SyncOp)
-    monkeypatch.setattr(ei.av_player, "play_file", lambda f: played.append(f))
+    monkeypatch.setattr(ei.av_player, "play_tags", lambda tags: played.extend(t.filename for t in tags))
     monkeypatch.setattr(ei, "tooltip", lambda *a, **k: None)
     monkeypatch.setattr(ei, "showWarning", lambda msg, **k: warnings.append(msg))
+    asked = []
+    answer = {"yes": True}
+    monkeypatch.setattr(ei, "askUser", lambda msg, **k: asked.append(msg) or answer["yes"])
 
     class FakeUpdate:
         def __init__(self, note):
@@ -117,7 +120,7 @@ def integration(col, monkeypatch):
     provider = FakeProvider()
     monkeypatch.setattr(ei, "make_provider", lambda c: provider)
     return types.SimpleNamespace(
-        ei=ei, cfg=cfg, played=played, warnings=warnings, updated=updated, provider=provider, app=app
+        ei=ei, cfg=cfg, played=played, asked=asked, answer=answer, warnings=warnings, updated=updated, provider=provider, app=app
     )
 
 
@@ -202,3 +205,95 @@ def test_stored_settings_validation(col, integration):
     assert ei._stored_settings(cfg, nt, fields) is None
     cfg["note_types"][str(nt["id"])] = {"source": "Gone", "target": "Back", "voice": "en-GB"}
     assert ei._stored_settings(cfg, nt, fields) is None
+
+
+def test_audio_inside_cloze_sentence(col, integration):
+    ei = integration.ei
+    note = col.new_note(col.models.by_name("Cloze"))
+    note["Text"] = "Stop being so {{c1::petty::kleinlich}}."
+    col.add_note(note, col.decks.id("Default"))
+    s = ei.NoteTypeSettings("Text", "Text", "en-GB", placement="cloze", cloze_text="sentence")
+    ei._run(_editor(note, False), note, s, integration.cfg)
+
+    assert integration.warnings == [] and integration.asked == []
+    assert integration.provider.calls == [("Stop being so petty.", "en-GB")]
+    text = col.get_note(note.id)["Text"]
+    fname = text.split("[sound:")[1].split("]")[0]
+    assert text == f"Stop being so {{{{c1::petty [sound:{fname}]::kleinlich}}}}."
+
+    # Real Anki rendering: no audio on the question, audio on the answer.
+    card = col.get_note(note.id).cards()[0]
+    assert card.question_av_tags() == []
+    assert [t.filename for t in card.answer_av_tags()] == [fname]
+
+    # rerun: cached and replaced, not duplicated
+    fresh = col.get_note(note.id)
+    ei._run(_editor(fresh, False), fresh, s, integration.cfg)
+    assert len(integration.provider.calls) == 1
+    assert col.get_note(note.id)["Text"].count("[sound:") == 1
+
+
+def test_audio_inside_cloze_word_mode(col, integration):
+    ei = integration.ei
+    note = col.new_note(col.models.by_name("Cloze"))
+    note["Text"] = "Stop being so {{c1::petty::kleinlich}}, be {{c1::kind}}."
+    s = ei.NoteTypeSettings("Text", "Text", "en-US", placement="cloze", cloze_text="word")
+    ei._run(_editor(note, True), note, s, integration.cfg)
+    assert integration.provider.calls == [("petty", "en-US"), ("kind", "en-US")]
+    assert note["Text"].count("[sound:pron_en-US_") == 2
+    assert "::kleinlich}}" in note["Text"]
+    assert len(integration.played) == 2
+
+
+def test_audio_inside_cloze_multiple_numbers_asks(col, integration):
+    ei = integration.ei
+    note = col.new_note(col.models.by_name("Cloze"))
+    note["Text"] = "{{c1::petty}} and {{c2::rude}}"
+    s = ei.NoteTypeSettings("Text", "Text", "en-US", placement="cloze", cloze_text="word")
+    integration.answer["yes"] = False
+    ei._run(_editor(note, True), note, s, integration.cfg)
+    assert len(integration.asked) == 1 and integration.provider.calls == []
+    assert "[sound:" not in note["Text"]
+
+
+def test_audio_inside_cloze_requires_cloze_field(col, integration):
+    ei = integration.ei
+    note = col.new_note(col.models.by_name("Cloze"))
+    note["Text"] = "{{c1::x}}"
+    note["Back Extra"] = "y"
+    s = ei.NoteTypeSettings("Back Extra", "Text", "en-US", placement="cloze")
+    ei._run(_editor(note, True), note, s, integration.cfg)
+    assert integration.warnings and "Lückentext-Feld" in integration.warnings[0]
+
+
+def test_dialog_cloze_placement(col, integration):
+    from aqt.qt import QDialogButtonBox
+
+    from pronunciation_tts.dialog import NoteTypeSettings, SettingsDialog
+
+    nt = col.models.by_name("Cloze")
+    fields, fronts, backs = _nt_parts(nt)
+    init = NoteTypeSettings("Text", "Text", "en-GB", placement="cloze", cloze_text="word")
+    dlg = SettingsDialog(None, fields, fronts, backs, init, "Cloze", is_cloze=True)
+    ok = dlg.buttons.button(QDialogButtonBox.StandardButton.Ok)
+    assert ok.isEnabled()  # in-cloze placement allows the (front-side) cloze field
+    s = dlg.result_settings()
+    assert (s.placement, s.cloze_text) == ("cloze", "word")
+    dlg.source.setCurrentText("Back Extra")
+    assert not ok.isEnabled()
+
+    # Basic note types do not offer the in-cloze option
+    fields, fronts, backs = _nt_parts(col.models.by_name("Basic"))
+    dlg2 = SettingsDialog(None, fields, fronts, backs, NoteTypeSettings("Back", "Back", "en-GB"), "Basic")
+    assert dlg2.placement.count() == 1
+
+
+def test_stored_settings_placement_validation(col, integration):
+    ei = integration.ei
+    basic, cloze = col.models.by_name("Basic"), col.models.by_name("Cloze")
+    raw = {"source": "Text", "target": "Text", "voice": "en-GB", "placement": "cloze"}
+    cfg = {"note_types": {str(cloze["id"]): raw}}
+    assert ei._stored_settings(cfg, cloze, ["Text", "Back Extra"]).placement == "cloze"
+    raw_basic = {"source": "Back", "target": "Back", "voice": "en-GB", "placement": "cloze"}
+    cfg = {"note_types": {str(basic["id"]): raw_basic}}
+    assert ei._stored_settings(cfg, basic, ["Front", "Back"]) is None

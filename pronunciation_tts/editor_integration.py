@@ -7,12 +7,13 @@ from dataclasses import asdict
 
 from anki.consts import MODEL_CLOZE
 from anki.notes import Note
+from anki.sound import SoundOrVideoTag
 from aqt import gui_hooks, mw
 from aqt.editor import Editor
 from aqt.operations import QueryOp
 from aqt.operations.note import update_note
 from aqt.sound import av_player
-from aqt.utils import showWarning, tooltip
+from aqt.utils import askUser, showWarning, tooltip
 
 from . import core
 from .dialog import NoteTypeSettings, SettingsDialog
@@ -61,12 +62,20 @@ def _stored_settings(cfg: dict, nt: dict, fields: list[str]) -> NoteTypeSettings
             voice=str(raw["voice"]),
             slow=bool(raw.get("slow", False)),
             provider=str(raw.get("provider", cfg.get("provider", "google_translate"))),
+            placement=str(raw.get("placement", core.PLACEMENT_FIELD)),
+            cloze_text=str(raw.get("cloze_text", core.CLOZE_TEXT_SENTENCE)),
         )
     except (KeyError, TypeError):
         return None
     if s.source not in fields or s.target not in fields or not is_known_voice(s.voice):
         return None
     if s.provider not in PROVIDER_IDS:
+        return None
+    if s.placement not in (core.PLACEMENT_FIELD, core.PLACEMENT_CLOZE):
+        return None
+    if s.placement == core.PLACEMENT_CLOZE and nt["type"] != MODEL_CLOZE:
+        return None
+    if s.cloze_text not in (core.CLOZE_TEXT_SENTENCE, core.CLOZE_TEXT_WORD):
         return None
     return s
 
@@ -105,7 +114,7 @@ def on_settings(editor: Editor) -> None:
     cfg = get_config()
     fields, fronts, backs, is_cloze, nt = _templates(note)
     initial = _stored_settings(cfg, nt, fields) or _default_settings(cfg, fields, fronts, backs, is_cloze)
-    dlg = SettingsDialog(editor.widget, fields, fronts, backs, initial, nt["name"])
+    dlg = SettingsDialog(editor.widget, fields, fronts, backs, initial, nt["name"], is_cloze=is_cloze)
     if not dlg.exec():
         return
     settings = dlg.result_settings()
@@ -116,18 +125,47 @@ def on_settings(editor: Editor) -> None:
 
 
 def _run(editor: Editor, note: Note, settings: NoteTypeSettings, cfg: dict) -> None:
-    _fields, fronts, _backs, _is_cloze, _nt = _templates(note)
-    if core.field_on_front(settings.target, fronts):
-        showWarning(
-            f"Das Zielfeld „{settings.target}“ ist auf der Vorderseite sichtbar. "
-            "Das Audio würde vor dem Aufdecken abgespielt. Bitte ein anderes Zielfeld wählen "
-            "(zweiter Lautsprecher-Knopf).",
-            parent=editor.widget,
-        )
-        return
+    _fields, fronts, _backs, is_cloze, _nt = _templates(note)
+    replace = bool(cfg.get("replace_existing_audio", True))
+    source_html = note[settings.source]
 
-    text = field_to_speech_text(note[settings.source])
-    if not text:
+    if settings.placement == core.PLACEMENT_CLOZE:
+        if not is_cloze or not core.field_is_cloze_rendered(settings.source, fronts):
+            showWarning(
+                f"„{settings.source}“ ist kein Lückentext-Feld. Bitte über den zweiten "
+                "Lautsprecher-Knopf ein anderes Feld oder einen anderen Einfügeort wählen.",
+                parent=editor.widget,
+            )
+            return
+        answers = core.cloze_answers(source_html)
+        if not answers:
+            tooltip(f"Im Feld „{settings.source}“ wurde keine Lücke ({{{{c1::…}}}}) gefunden.", parent=editor.widget)
+            return
+        if len({n for n, _ in answers}) > 1 and not askUser(
+            "Diese Notiz hat mehrere Lücken-Nummern (c1, c2 …). Auf der Karte einer Lücke sind "
+            "die anderen Lücken sichtbar – deren Audio wäre dort schon auf der Vorderseite zu hören.\n\n"
+            "Trotzdem in die Lücken einfügen?",
+            parent=editor.widget,
+            defaultno=True,
+        ):
+            return
+        if settings.cloze_text == core.CLOZE_TEXT_WORD:
+            texts = [t for _, t in answers if t]
+        else:
+            texts = [field_to_speech_text(source_html)]
+    else:
+        if core.field_on_front(settings.target, fronts):
+            showWarning(
+                f"Das Zielfeld „{settings.target}“ ist auf der Vorderseite sichtbar. "
+                "Das Audio würde vor dem Aufdecken abgespielt. Bitte ein anderes Zielfeld wählen "
+                "(zweiter Lautsprecher-Knopf).",
+                parent=editor.widget,
+            )
+            return
+        texts = [field_to_speech_text(source_html)]
+
+    texts = list(dict.fromkeys(t for t in texts if t))  # unique, keep order
+    if not texts:
         tooltip(f"Das Feld „{settings.source}“ ist leer.", parent=editor.widget)
         return
 
@@ -138,18 +176,28 @@ def _run(editor: Editor, note: Note, settings: NoteTypeSettings, cfg: dict) -> N
         showWarning(str(e), parent=editor.widget)
         return
 
-    fname = core.media_filename(provider.id, voice.id, text, settings.slow)
+    def op(col) -> dict[str, str]:
+        stored: dict[str, str] = {}
+        for text in texts:
+            fname = core.media_filename(provider.id, voice.id, text, settings.slow)
+            if not col.media.have(fname):  # else cached: same text, voice and speed
+                fname = col.media.write_data(fname, provider.synthesize(text, voice, slow=settings.slow))
+            stored[text] = fname
+        return stored
 
-    def op(col) -> str:
-        if col.media.have(fname):
-            return fname  # cached: same text, voice and speed
-        data = provider.synthesize(text, voice, slow=settings.slow)
-        return col.media.write_data(fname, data)
+    def transform(current: str, stored: dict[str, str]) -> str:
+        if settings.placement == core.PLACEMENT_CLOZE:
+            if settings.cloze_text == core.CLOZE_TEXT_WORD:
+                return core.insert_sound_in_clozes(current, lambda _n, text, _f: stored.get(text), replace)
+            sentence = stored[texts[0]]
+            return core.insert_sound_in_clozes(current, lambda _n, _t, first: sentence if first else None, replace)
+        return core.insert_sound_tag(current, stored[texts[0]], replace)
 
-    def on_success(stored_name: str) -> None:
-        _apply(editor, note, settings.target, stored_name, bool(cfg.get("replace_existing_audio", True)))
+    def on_success(stored: dict[str, str]) -> None:
+        field = settings.source if settings.placement == core.PLACEMENT_CLOZE else settings.target
+        _apply(editor, note, field, lambda current: transform(current, stored))
         if cfg.get("play_after_insert", True):
-            av_player.play_file(stored_name)
+            av_player.play_tags([SoundOrVideoTag(filename=f) for f in stored.values()])
         tooltip("Aussprache eingefügt.", parent=editor.widget)
 
     def on_failure(exc: Exception) -> None:
@@ -163,17 +211,17 @@ def _run(editor: Editor, note: Note, settings: NoteTypeSettings, cfg: dict) -> N
     )
 
 
-def _apply(editor: Editor, note: Note, target: str, fname: str, replace: bool) -> None:
+def _apply(editor: Editor, note: Note, field: str, transform) -> None:
     if editor.note is not note:
         # The user switched to another note while downloading.
         if not note.id:
             return
         note = mw.col.get_note(note.id)
-        note[target] = core.insert_sound_tag(note[target], fname, replace)
+        note[field] = transform(note[field])
         update_note(parent=editor.widget, note=note).run_in_background()
         return
 
-    note[target] = core.insert_sound_tag(note[target], fname, replace)
+    note[field] = transform(note[field])
     if editor.addMode or not note.id:
         editor.loadNoteKeepingFocus()
     else:
