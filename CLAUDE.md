@@ -1,4 +1,4 @@
-# CLAUDE.md – Anki add-on "Aussprache per Knopfdruck (TTS)"
+# CLAUDE.md – Anki add-on "One-Click Pronunciation (TTS)"
 
 ## Vision
 Anki add-on for language learners: while adding/editing a note that already
@@ -22,7 +22,8 @@ pronunciation_tts/        the add-on package (this folder is what gets zipped)
   text.py                 HTML/cloze/sound stripping, chunking                             [pure]
   voices.py               language/accent catalogue (+ derived host allow-list)            [pure]
   config.json / config.md default config + docs shown in Anki's config editor
-  manifest.json           metadata for .ankiaddon installs
+  manifest.json           metadata for .ankiaddon installs; `name` is the English name shown in Anki
+                          (`_sync_addon_name` also updates existing installs at start-up)
 tests/                    pytest; test_anki_integration.py needs real anki+aqt (else skipped)
 build.py                  builds dist/pronunciation_tts.ankiaddon (stdlib only, cross-platform)
 .github/workflows/build.yml  CI: tests + build on push/PR; attaches the file to published releases

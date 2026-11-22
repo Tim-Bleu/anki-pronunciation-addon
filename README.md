@@ -1,5 +1,7 @@
 # Aussprache per Knopfdruck – Anki-Add-on
 
+In Anki heißt das Add-on **One-Click Pronunciation (TTS)**.
+
 🇬🇧 [English version](README.en.md)
 
 > **Über dieses Projekt:** Das ist mein erstes Vibe-Coding-Projekt. Ich nutze es, um die

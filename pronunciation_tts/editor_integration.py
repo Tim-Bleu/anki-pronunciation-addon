@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import asdict
 
@@ -235,7 +236,22 @@ def _add_buttons(buttons: list[str], editor: Editor) -> None:
     )
 
 
+def _sync_addon_name() -> None:
+    """Show the (English) name from manifest.json in Anki's add-on list, also for
+    installs made before the rename. Anki itself only reads it on (re)install."""
+    try:
+        with open(os.path.join(ADDON_DIR, "manifest.json"), encoding="utf8") as f:
+            name = json.load(f).get("name")
+        meta = mw.addonManager.addonMeta(ADDON_MODULE)
+        if isinstance(name, str) and name and meta.get("name") != name:
+            meta["name"] = name
+            mw.addonManager.writeAddonMeta(ADDON_MODULE, meta)
+    except Exception:  # never break start-up over a display name
+        pass
+
+
 def setup() -> None:
+    _sync_addon_name()
     try:
         from anki.lang import current_lang
     except ImportError:  # pragma: no cover

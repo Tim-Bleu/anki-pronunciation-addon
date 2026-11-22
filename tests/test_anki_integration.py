@@ -310,3 +310,18 @@ def test_stored_settings_placement_validation(col, integration):
     raw_basic = {"source": "Back", "target": "Back", "voice": "en-GB", "placement": "cloze"}
     cfg = {"note_types": {str(basic["id"]): raw_basic}}
     assert ei._stored_settings(cfg, basic, ["Front", "Back"]) is None
+
+
+def test_sync_addon_name(integration, monkeypatch):
+    ei = integration.ei
+    meta = {"name": "Aussprache per Knopfdruck (TTS)", "config": {"x": 1}}
+    written = []
+    am = ei.mw.addonManager
+    monkeypatch.setattr(am, "addonMeta", lambda m: dict(meta), raising=False)
+    monkeypatch.setattr(am, "writeAddonMeta", lambda m, d: written.append(d), raising=False)
+    ei._sync_addon_name()
+    assert written == [{"name": "One-Click Pronunciation (TTS)", "config": {"x": 1}}]
+    meta["name"] = "One-Click Pronunciation (TTS)"
+    written.clear()
+    ei._sync_addon_name()
+    assert written == []
