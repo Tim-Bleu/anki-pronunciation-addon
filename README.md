@@ -13,11 +13,22 @@ der **Rückseite** gelegt und daher erst abgespielt, wenn du die Karte aufdeckst
 Lückentext beantwortet hast.
 
 ## Installation
-1. `./scripts/build.sh` ausführen → `dist/pronunciation_tts.ankiaddon`
-2. In Anki: *Extras → Add-ons → Aus Datei installieren…* und die Datei wählen.
+
+**Einfachster Weg – fertige Datei herunterladen:**
+1. Auf GitHub rechts unter **Releases** die neueste Version öffnen und
+   `pronunciation_tts.ankiaddon` herunterladen.
+2. Die Datei doppelt anklicken – Anki installiert sie. (Oder in Anki:
+   *Extras → Add-ons → Aus Datei installieren…* und die Datei wählen.)
 3. Anki neu starten.
 
-(Alternativ den Ordner `pronunciation_tts` in den Anki-Add-on-Ordner kopieren.)
+**Selbst bauen** (z. B. für den neuesten Stand; nur Python nötig):
+- Windows: `build.py` doppelt anklicken.
+- macOS / Linux: im Projektordner `python3 build.py` ausführen.
+
+Die Datei liegt danach unter `dist/pronunciation_tts.ankiaddon`.
+
+(Alternativ den Ordner `pronunciation_tts` in den Anki-Add-on-Ordner kopieren:
+*Extras → Add-ons → Add-on-Ordner anzeigen*.)
 
 ## Benutzung
 Im Editor erscheinen zwei Lautsprecher-Knöpfe:

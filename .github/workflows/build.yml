@@ -1,0 +1,44 @@
+name: Test & build add-on
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # only used to attach the file to a release
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run tests
+        run: |
+          python -m pip install --upgrade pip pytest
+          python -m pytest -q
+
+      - name: Build .ankiaddon
+        run: python build.py
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pronunciation_tts.ankiaddon
+          path: dist/pronunciation_tts.ankiaddon
+
+      - name: Attach to release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" dist/pronunciation_tts.ankiaddon --clobber
