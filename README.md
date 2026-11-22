@@ -62,11 +62,16 @@ du das Audio erst nach dem Aufdecken. Unter **„Vorlesen“** wählst du:
 - **Ganzen Satz** – „Stop being so petty.“
 - **Nur das Lückenwort** – „petty“ (jede Lücke bekommt ihr eigenes Audio)
 
-Hinweis: Hat eine Notiz mehrere Lücken-*Nummern* (`c1`, `c2` …), ist auf der Karte für c1
-die Lücke c2 als normaler Text sichtbar, und deren Audio würde schon auf der Vorderseite
-abgespielt. Das Add-on fragt in diesem Fall nach. Für solche Notizen ist „In ein Feld der
-Rückseite“ (z. B. „Back Extra“) die bessere Wahl. Mehrere Lücken mit *derselben* Nummer
-(`{{c1::…}} … {{c1::…}}`) sind kein Problem.
+**Mehrere Lücken = mehrere Fremdwörter:** Hat eine Notiz mehrere Lücken-*Nummern*
+(`c1`, `c2` …), bekommt jede Lücke automatisch nur **ihr eigenes Wort** – auch wenn
+„Ganzen Satz“ eingestellt ist:
+
+    Stop being so {{c1::petty [sound:…petty…]::kleinlich}} and {{c2::rude [sound:…rude…]::unhöflich}}.
+
+Auf der Karte für c1 ist die Lücke c2 als normaler Text sichtbar und wird daher schon auf
+der Vorderseite vorgelesen. Das ist nur das sichtbare Wort – die gesuchte Lösung (c1) hörst
+du erst nach dem Aufdecken. Mehrere Lücken mit *derselben* Nummer (`{{c1::…}} … {{c1::…}}`)
+zählen als eine Lücke; dort gilt deine Einstellung.
 
 Tipp für Notiztyp „Einfach (mit umgekehrter Karte)“: Hier stehen beide Felder auf einer
 Vorderseite. Lege ein zusätzliches Feld `Audio` an und füge `{{Audio}}` nur in die
@@ -108,3 +113,9 @@ Gleiche Texte werden nicht erneut heruntergeladen (Cache über Dateinamen-Hash).
 python3 -m pytest -q
 ```
 Details für Entwickler/KI-Assistenten: siehe [CLAUDE.md](CLAUDE.md).
+
+## Lizenz
+Open Source unter der [GNU Affero General Public License v3.0 oder neuer](LICENSE)
+(AGPL-3.0-or-later) – dieselbe Lizenz wie Anki selbst. Kostenlos: Du darfst den Code
+nutzen, verändern und weitergeben; veränderte Versionen müssen ebenfalls als Open Source
+unter dieser Lizenz veröffentlicht werden.

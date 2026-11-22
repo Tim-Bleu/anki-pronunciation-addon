@@ -118,3 +118,13 @@ def test_field_is_cloze_rendered():
     assert core.field_is_cloze_rendered("Text", ["{{furigana:cloze:Text}}"])
     assert not core.field_is_cloze_rendered("Text", ["{{Text}}"])
     assert not core.field_is_cloze_rendered("Back Extra", ["{{cloze:Text}}"])
+
+
+def test_effective_cloze_text():
+    one = "Stop being so {{c1::petty}}."
+    same_number = "{{c1::a}} {{c1::b}}"
+    two = "{{c1::petty}} and {{c2::rude}}"
+    assert core.effective_cloze_text(one, core.CLOZE_TEXT_SENTENCE) == core.CLOZE_TEXT_SENTENCE
+    assert core.effective_cloze_text(one, core.CLOZE_TEXT_WORD) == core.CLOZE_TEXT_WORD
+    assert core.effective_cloze_text(same_number, core.CLOZE_TEXT_SENTENCE) == core.CLOZE_TEXT_SENTENCE
+    assert core.effective_cloze_text(two, core.CLOZE_TEXT_SENTENCE) == core.CLOZE_TEXT_WORD

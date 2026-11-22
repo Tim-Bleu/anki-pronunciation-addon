@@ -36,6 +36,9 @@ def build(out: Path = OUT) -> Path:
                 continue
             # Files at the zip root (not inside a folder) – required by Anki.
             zf.write(path, rel.as_posix())
+        license_file = ROOT / "LICENSE"
+        if license_file.exists():
+            zf.write(license_file, "LICENSE")
     return out
 
 

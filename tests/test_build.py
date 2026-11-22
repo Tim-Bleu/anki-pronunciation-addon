@@ -20,7 +20,7 @@ def test_build_creates_installable_zip(tmp_path):
     junk.write_bytes(b"x")
     out = build.build(tmp_path / "x.ankiaddon")
     names = zipfile.ZipFile(out).namelist()
-    for required in ("__init__.py", "manifest.json", "config.json", "config.md", "net.py", "icons/speaker.svg"):
+    for required in ("__init__.py", "manifest.json", "config.json", "config.md", "net.py", "icons/speaker.svg", "LICENSE"):
         assert required in names
     assert not any("__pycache__" in n or n.endswith(".pyc") or n == "meta.json" for n in names)
     assert not any(n.startswith("pronunciation_tts/") for n in names)  # files must be at zip root

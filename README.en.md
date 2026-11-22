@@ -60,10 +60,16 @@ after revealing it. Under **"Read aloud"** you choose:
 - **Whole sentence**: "Stop being so petty."
 - **Cloze word only**: "petty" (each cloze gets its own audio)
 
-Caveat: if a note has several cloze *numbers* (`c1`, `c2` …), the card for c1 shows c2 as
-plain text, so c2's audio would already play on the front. The add-on asks before inserting
-in that case. For such notes, a back-side field like "Back Extra" is the better choice.
-Several clozes with the *same* number (`{{c1::…}} … {{c1::…}}`) are fine.
+**Several clozes = several foreign words:** if a note has several cloze *numbers*
+(`c1`, `c2` …), each cloze automatically gets **only its own word**, even if "Whole
+sentence" is selected:
+
+    Stop being so {{c1::petty [sound:…petty…]::kleinlich}} and {{c2::rude [sound:…rude…]::unhöflich}}.
+
+On the card for c1, cloze c2 is visible as plain text, so its word is already read aloud on
+the front. That is only the visible word; the answer you are asked for (c1) is only heard
+after revealing. Several clozes with the *same* number (`{{c1::…}} … {{c1::…}}`) count as one
+cloze; your setting applies there.
 
 Tip for "Basic (and reversed card)": both fields appear on a front side. Add an extra field
 `Audio` and put `{{Audio}}` only on the back template of the card you want.
@@ -104,3 +110,8 @@ The same text is not downloaded twice (cached via a hash in the file name).
 python3 -m pytest -q
 ```
 Details for developers and AI assistants: see [CLAUDE.md](CLAUDE.md).
+
+## License
+Open source under the [GNU Affero General Public License v3.0 or later](LICENSE)
+(AGPL-3.0-or-later), the same license as Anki itself. Free of charge: you may use, modify and
+share the code; modified versions must also be published as open source under this license.

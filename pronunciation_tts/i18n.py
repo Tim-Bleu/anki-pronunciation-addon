@@ -136,13 +136,13 @@ MESSAGES: dict[str, dict[str, str]] = {
     },
     "dlg.cloze_ok": {
         "en": "✔ The audio sits inside the cloze and only plays after it is revealed.<br>"
-        "<small>Note: if a note has several cloze numbers (c1, c2 …), card c1 shows cloze c2 "
-        "as plain text – its audio would already play on the front. Use “Into a back-side "
-        "field” for such notes.</small>",
+        "<small>With several clozes (c1, c2 …) each cloze gets only its own word. On the card "
+        "for c1, the visible cloze c2 is read aloud on the front – this never reveals the "
+        "answer you are asked for.</small>",
         "de": "✔ Das Audio steht in der Lücke und wird erst nach dem Aufdecken abgespielt.<br>"
-        "<small>Hinweis: Hat eine Notiz mehrere Lücken-Nummern (c1, c2 …), ist auf der "
-        "Karte c1 die Lücke c2 sichtbar – deren Audio wäre dort schon auf der Vorderseite "
-        "zu hören. Dafür besser „In ein Feld der Rückseite“ wählen.</small>",
+        "<small>Bei mehreren Lücken (c1, c2 …) bekommt jede Lücke nur ihr eigenes Wort. Auf der "
+        "Karte für c1 wird die sichtbare Lücke c2 schon vorne vorgelesen – die gesuchte Lösung "
+        "verrät das nie.</small>",
     },
     "dlg.on_front": {
         "en": "⚠ The field “{f}” is shown on the <b>front</b> – the audio would give the answer "
@@ -182,14 +182,6 @@ MESSAGES: dict[str, dict[str, str]] = {
     "ed.no_cloze": {
         "en": "No cloze ({{{{c1::…}}}}) found in the field “{f}”.",
         "de": "Im Feld „{f}“ wurde keine Lücke ({{{{c1::…}}}}) gefunden.",
-    },
-    "ed.multi_cloze": {
-        "en": "This note has several cloze numbers (c1, c2 …). On the card for one cloze the "
-        "other clozes are visible – their audio would already play on the front.\n\n"
-        "Insert into the clozes anyway?",
-        "de": "Diese Notiz hat mehrere Lücken-Nummern (c1, c2 …). Auf der Karte einer Lücke sind "
-        "die anderen Lücken sichtbar – deren Audio wäre dort schon auf der Vorderseite zu hören.\n\n"
-        "Trotzdem in die Lücken einfügen?",
     },
     "ed.target_on_front": {
         "en": "The target field “{f}” is visible on the front. The audio would play before the "

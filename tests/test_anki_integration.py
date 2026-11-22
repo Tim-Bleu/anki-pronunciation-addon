@@ -95,9 +95,6 @@ def integration(col, monkeypatch):
     monkeypatch.setattr(ei.av_player, "play_tags", lambda tags: played.extend(t.filename for t in tags))
     monkeypatch.setattr(ei, "tooltip", lambda *a, **k: None)
     monkeypatch.setattr(ei, "showWarning", lambda msg, **k: warnings.append(msg))
-    asked = []
-    answer = {"yes": True}
-    monkeypatch.setattr(ei, "askUser", lambda msg, **k: asked.append(msg) or answer["yes"])
 
     class FakeUpdate:
         def __init__(self, note):
@@ -120,7 +117,7 @@ def integration(col, monkeypatch):
     provider = FakeProvider()
     monkeypatch.setattr(ei, "make_provider", lambda c: provider)
     return types.SimpleNamespace(
-        ei=ei, cfg=cfg, played=played, asked=asked, answer=answer, warnings=warnings, updated=updated, provider=provider, app=app
+        ei=ei, cfg=cfg, played=played, warnings=warnings, updated=updated, provider=provider, app=app
     )
 
 
@@ -215,7 +212,7 @@ def test_audio_inside_cloze_sentence(col, integration):
     s = ei.NoteTypeSettings("Text", "Text", "en-GB", placement="cloze", cloze_text="sentence")
     ei._run(_editor(note, False), note, s, integration.cfg)
 
-    assert integration.warnings == [] and integration.asked == []
+    assert integration.warnings == []
     assert integration.provider.calls == [("Stop being so petty.", "en-GB")]
     text = col.get_note(note.id)["Text"]
     fname = text.split("[sound:")[1].split("]")[0]
@@ -245,15 +242,31 @@ def test_audio_inside_cloze_word_mode(col, integration):
     assert len(integration.played) == 2
 
 
-def test_audio_inside_cloze_multiple_numbers_asks(col, integration):
+def test_several_cloze_numbers_get_their_own_word(col, integration):
+    """Rule: two cloze numbers = two foreign words -> each cloze gets only its own
+    word, even if "whole sentence" is configured."""
     ei = integration.ei
     note = col.new_note(col.models.by_name("Cloze"))
-    note["Text"] = "{{c1::petty}} and {{c2::rude}}"
-    s = ei.NoteTypeSettings("Text", "Text", "en-US", placement="cloze", cloze_text="word")
-    integration.answer["yes"] = False
-    ei._run(_editor(note, True), note, s, integration.cfg)
-    assert len(integration.asked) == 1 and integration.provider.calls == []
-    assert "[sound:" not in note["Text"]
+    note["Text"] = "Stop being so {{c1::petty::kleinlich}} and {{c2::rude::unhöflich}}."
+    col.add_note(note, col.decks.id("Default"))
+    s = ei.NoteTypeSettings("Text", "Text", "en-GB", placement="cloze", cloze_text="sentence")
+    ei._run(_editor(note, False), note, s, integration.cfg)
+
+    assert integration.warnings == []
+    assert integration.provider.calls == [("petty", "en-GB"), ("rude", "en-GB")]
+    text = col.get_note(note.id)["Text"]
+    f_petty = core.media_filename("google_translate", "en-GB", "petty", False)
+    f_rude = core.media_filename("google_translate", "en-GB", "rude", False)
+    assert text == (
+        f"Stop being so {{{{c1::petty [sound:{f_petty}]::kleinlich}}}} "
+        f"and {{{{c2::rude [sound:{f_rude}]::unhöflich}}}}."
+    )
+    # Real rendering: on each card the hidden cloze's own word only plays on the back.
+    c1, c2 = sorted(col.get_note(note.id).cards(), key=lambda c: c.ord)
+    assert [t.filename for t in c1.question_av_tags()] == [f_rude]
+    assert [t.filename for t in c2.question_av_tags()] == [f_petty]
+    assert f_petty in [t.filename for t in c1.answer_av_tags()]
+    assert f_rude in [t.filename for t in c2.answer_av_tags()]
 
 
 def test_audio_inside_cloze_requires_cloze_field(col, integration):

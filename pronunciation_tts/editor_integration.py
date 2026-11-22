@@ -13,7 +13,7 @@ from aqt.editor import Editor
 from aqt.operations import QueryOp
 from aqt.operations.note import update_note
 from aqt.sound import av_player
-from aqt.utils import askUser, showWarning, tooltip
+from aqt.utils import showWarning, tooltip
 
 from . import core
 from .dialog import NoteTypeSettings, SettingsDialog
@@ -131,15 +131,15 @@ def _run(editor: Editor, note: Note, settings: NoteTypeSettings, cfg: dict) -> N
         if not answers:
             tooltip(tr("ed.no_cloze", f=settings.source), parent=editor.widget)
             return
-        if len({n for n, _ in answers}) > 1 and not askUser(
-            tr("ed.multi_cloze"), parent=editor.widget, defaultno=True
-        ):
-            return
-        if settings.cloze_text == core.CLOZE_TEXT_WORD:
+        # Rule: several cloze numbers = several foreign words -> each deletion gets
+        # only its own word, regardless of the "whole sentence" setting.
+        cloze_text = core.effective_cloze_text(source_html, settings.cloze_text)
+        if cloze_text == core.CLOZE_TEXT_WORD:
             texts = [t for _, t in answers if t]
         else:
             texts = [field_to_speech_text(source_html)]
     else:
+        cloze_text = settings.cloze_text
         if core.field_on_front(settings.target, fronts):
             showWarning(tr("ed.target_on_front", f=settings.target), parent=editor.widget)
             return
@@ -168,7 +168,7 @@ def _run(editor: Editor, note: Note, settings: NoteTypeSettings, cfg: dict) -> N
 
     def transform(current: str, stored: dict[str, str]) -> str:
         if settings.placement == core.PLACEMENT_CLOZE:
-            if settings.cloze_text == core.CLOZE_TEXT_WORD:
+            if cloze_text == core.CLOZE_TEXT_WORD:
                 return core.insert_sound_in_clozes(current, lambda _n, text, _f: stored.get(text), replace)
             sentence = stored[texts[0]]
             return core.insert_sound_in_clozes(current, lambda _n, _t, first: sentence if first else None, replace)

@@ -47,10 +47,12 @@ All downloads go through `net.request`. Never use `urllib`, `requests`,
 - Exception, placement `"cloze"` (cloze note types only): the tag goes *inside* the deletion,
   `{{c1::petty [sound:pron_….mp3]::kleinlich}}` (before the hint). Anki hides the active deletion
   on the front, so it plays only on the back (verified via `card.question_av_tags()` in
-  `tests/test_anki_integration.py`). Caveat: on card c2 the deletion c1 is visible on the front,
-  so with several cloze numbers its audio plays there → dialog hint + `askUser` (default no).
+  `tests/test_anki_integration.py`). On card c2 the deletion c1 is visible on the front, so its
+  audio plays there – acceptable, it only repeats visible text and never the asked answer.
   `cloze_text`: `"sentence"` (whole sentence, in the first deletion of each number) or `"word"`
   (each deletion gets audio of its own answer).
+  **Rule (owner's decision):** several cloze *numbers* = several foreign words → always `"word"`,
+  whatever the setting (`core.effective_cloze_text`). No confirmation prompt.
 - `text.field_to_speech_text` must ignore our inserted tags (including their leading space), so the
   cache key stays the same after insertion.
 - Cloze text: answers are spoken in full (`{{c1::x::hint}}` → `x`).
@@ -77,3 +79,7 @@ The same file can be uploaded to AnkiWeb (ankiweb.net/shared/addons).
 - Batch mode in the browser (generate for all selected notes).
 - More providers (e.g. Azure / ElevenLabs) – add a `Provider` subclass, its exact host, tests.
 - Optional automatic template check/fix offering to add an `{{Audio}}` field to the back template.
+
+## License
+AGPL-3.0-or-later (`LICENSE`, same as Anki). New source files need no per-file header, but keep
+dependencies compatible (stdlib only so far).
