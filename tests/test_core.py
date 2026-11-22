@@ -128,3 +128,35 @@ def test_effective_cloze_text():
     assert core.effective_cloze_text(one, core.CLOZE_TEXT_WORD) == core.CLOZE_TEXT_WORD
     assert core.effective_cloze_text(same_number, core.CLOZE_TEXT_SENTENCE) == core.CLOZE_TEXT_SENTENCE
     assert core.effective_cloze_text(two, core.CLOZE_TEXT_SENTENCE) == core.CLOZE_TEXT_WORD
+
+
+# ---------------------------------------------------------------- per-cloze audio field
+
+
+def test_build_cloze_audio_word_mode():
+    text = "Stop being so {{c1::petty::kleinlich}} and {{c2::rude}}, {{c2::rude}}."
+    stored = {"petty": "pron_a.mp3", "rude": "pron_b.mp3"}
+    assert core.build_cloze_audio(text, core.CLOZE_TEXT_WORD, stored) == (
+        "{{c1::[sound:pron_a.mp3]}} {{c2::[sound:pron_b.mp3]}}"
+    )
+
+
+def test_build_cloze_audio_sentence_mode():
+    text = "{{c1::a}} x {{c1::b}}"
+    out = core.build_cloze_audio(text, core.CLOZE_TEXT_SENTENCE, {"a x b": "pron_s.mp3"}, "a x b")
+    assert out == "{{c1::[sound:pron_s.mp3]}}"
+
+
+def test_build_cloze_audio_rejects_unsafe_and_skips_missing():
+    assert core.build_cloze_audio("{{c1::a}}", core.CLOZE_TEXT_WORD, {}) == ""
+    with pytest.raises(ValueError):
+        core.build_cloze_audio("{{c1::a}}", core.CLOZE_TEXT_WORD, {"a": "x]y.mp3"})
+
+
+def test_cloze_only_template_helpers():
+    back = "{{cloze:Text}}<br>{{Back Extra}}"
+    assert not core.cloze_only_on_back("Cloze Audio", [back])
+    new = core.add_cloze_only(back)
+    assert core.cloze_only_on_back("Cloze Audio", [new])
+    assert core.add_cloze_only(new) == new  # idempotent
+    assert not core.field_on_front("Cloze Audio", ["{{cloze:Text}}"])

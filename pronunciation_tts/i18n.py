@@ -111,8 +111,12 @@ MESSAGES: dict[str, dict[str, str]] = {
     "dlg.source": {"en": "Read text from field:", "de": "Text vorlesen aus Feld:"},
     "dlg.placement": {"en": "Insert audio:", "de": "Audio einfügen:"},
     "dlg.placement_field": {"en": "Into a back-side field", "de": "In ein Feld der Rückseite"},
+    "dlg.placement_cloze_field": {
+        "en": "Only the current cloze (own audio field) – recommended",
+        "de": "Nur die aktuelle Lücke (eigenes Audio-Feld) – empfohlen",
+    },
     "dlg.placement_cloze": {
-        "en": "Directly into the cloze",
+        "en": "Directly into the cloze text",
         "de": "Direkt in die Lücke (im Lückentext)",
     },
     "dlg.target": {"en": "Insert audio into field:", "de": "Audio einfügen in Feld:"},
@@ -135,14 +139,20 @@ MESSAGES: dict[str, dict[str, str]] = {
         "Bitte das Feld mit den Lücken wählen.",
     },
     "dlg.cloze_ok": {
-        "en": "✔ The audio sits inside the cloze and only plays after it is revealed.<br>"
-        "<small>With several clozes (c1, c2 …) each cloze gets only its own word. On the card "
-        "for c1, the visible cloze c2 is read aloud on the front – this never reveals the "
-        "answer you are asked for.</small>",
-        "de": "✔ Das Audio steht in der Lücke und wird erst nach dem Aufdecken abgespielt.<br>"
-        "<small>Bei mehreren Lücken (c1, c2 …) bekommt jede Lücke nur ihr eigenes Wort. Auf der "
-        "Karte für c1 wird die sichtbare Lücke c2 schon vorne vorgelesen – die gesuchte Lösung "
-        "verrät das nie.</small>",
+        "en": "✔ The audio sits inside the cloze and plays after revealing.<br>"
+        "<small>Audio in other clozes on the card plays too.</small>",
+        "de": "✔ Das Audio steht in der Lücke und wird nach dem Aufdecken abgespielt.<br>"
+        "<small>Audios in anderen Lücken der Karte werden mit abgespielt.</small>",
+    },
+    "dlg.cloze_field_ok": {
+        "en": "✔ Each card plays only the word of its own cloze, after revealing.<br>"
+        "<small>The first time, the field “{f}” is added to this note type.</small>",
+        "de": "✔ Jede Karte spielt nur das Wort ihrer eigenen Lücke, nach dem Aufdecken.<br>"
+        "<small>Beim ersten Mal wird dem Notiztyp das Feld „{f}“ hinzugefügt.</small>",
+    },
+    "dlg.cloze_field_on_front": {
+        "en": "⚠ The field “{f}” is shown on the front. Please remove it from the front template.",
+        "de": "⚠ Das Feld „{f}“ steht auf der Vorderseite. Bitte aus der Vorderseiten-Vorlage entfernen.",
     },
     "dlg.on_front": {
         "en": "⚠ The field “{f}” is shown on the <b>front</b> – the audio would give the answer "
@@ -182,6 +192,14 @@ MESSAGES: dict[str, dict[str, str]] = {
     "ed.no_cloze": {
         "en": "No cloze ({{{{c1::…}}}}) found in the field “{f}”.",
         "de": "Im Feld „{f}“ wurde keine Lücke ({{{{c1::…}}}}) gefunden.",
+    },
+    "ed.setup_cloze_audio": {
+        "en": "To play only the current cloze, the note type “{nt}” gets a field “{f}” "
+        "and its back template the line {{{{cloze-only:{f}}}}}.\n\n"
+        "Your existing notes and cards are not changed. Set it up now?",
+        "de": "Damit nur die aktuelle Lücke abgespielt wird, bekommt der Notiztyp „{nt}“ ein "
+        "Feld „{f}“ und die Rückseiten-Vorlage die Zeile {{{{cloze-only:{f}}}}}.\n\n"
+        "Deine vorhandenen Notizen und Karten bleiben unverändert. Jetzt einrichten?",
     },
     "ed.target_on_front": {
         "en": "The target field “{f}” is visible on the front. The audio would play before the "

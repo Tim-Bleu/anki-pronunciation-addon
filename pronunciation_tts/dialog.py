@@ -26,7 +26,8 @@ class NoteTypeSettings:
     target: str
     voice: str
     slow: bool = False
-    # "field": append to target field; "cloze": put audio inside the cloze deletion(s)
+    # "field": append to target field; "cloze": put audio inside the cloze deletion(s);
+    # "cloze_field": per-cloze audio in its own field, only the current cloze plays
     placement: str = core.PLACEMENT_FIELD
     # only for placement "cloze": speak the whole sentence or only the cloze answer
     cloze_text: str = core.CLOZE_TEXT_SENTENCE
@@ -55,9 +56,10 @@ class SettingsDialog(QDialog):
         self.source = QComboBox()
         self.source.addItems(field_names)
         self.placement = QComboBox()
-        self.placement.addItem(tr("dlg.placement_field"), core.PLACEMENT_FIELD)
         if is_cloze:
+            self.placement.addItem(tr("dlg.placement_cloze_field"), core.PLACEMENT_CLOZE_FIELD)
             self.placement.addItem(tr("dlg.placement_cloze"), core.PLACEMENT_CLOZE)
+        self.placement.addItem(tr("dlg.placement_field"), core.PLACEMENT_FIELD)
         self.target = QComboBox()
         self.target.addItems(field_names)
         self.cloze_text = QComboBox()
@@ -113,7 +115,7 @@ class SettingsDialog(QDialog):
         self._update()
 
     def _in_cloze(self) -> bool:
-        return self.placement.currentData() == core.PLACEMENT_CLOZE
+        return self.placement.currentData() in core.CLOZE_PLACEMENTS
 
     def _update(self) -> None:
         in_cloze = self._in_cloze()
@@ -131,6 +133,10 @@ class SettingsDialog(QDialog):
             source = self.source.currentText()
             if not core.field_is_cloze_rendered(source, self._front):
                 return False, tr("dlg.not_cloze_field", f=source)
+            if self.placement.currentData() == core.PLACEMENT_CLOZE_FIELD:
+                if core.field_on_front(core.CLOZE_AUDIO_FIELD, self._front):
+                    return False, tr("dlg.cloze_field_on_front", f=core.CLOZE_AUDIO_FIELD)
+                return True, tr("dlg.cloze_field_ok", f=core.CLOZE_AUDIO_FIELD)
             return True, tr("dlg.cloze_ok")
         target = self.target.currentText()
         if core.field_on_front(target, self._front):

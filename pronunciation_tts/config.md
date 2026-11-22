@@ -9,4 +9,4 @@
 - `replace_existing_audio`: `true` = replace audio previously inserted by this add-on / vorher eingefügte Audios ersetzen.
 - `play_after_insert`: play the audio once after inserting / nach dem Einfügen einmal abspielen.
 - `shortcut_generate` / `shortcut_settings`: editor shortcuts / Tastenkürzel im Editor.
-- `note_types`: settings remembered per note type (source field, target field, voice, `placement`: `"field"` = back-side field, `"cloze"` = inside the cloze; `cloze_text`: `"sentence"` or `"word"`). Maintained by the add-on – easiest to change with the second speaker button.
+- `note_types`: settings remembered per note type (source field, target field, voice, `placement`: `"field"` = back-side field, `"cloze_field"` = own field "Cloze Audio", only the current cloze plays (default for cloze note types), `"cloze"` = inside the cloze text; `cloze_text`: `"sentence"` or `"word"`). Maintained by the add-on – easiest to change with the second speaker button.
