@@ -61,6 +61,7 @@ def integration(col, monkeypatch):
     }
     mw = types.SimpleNamespace(
         col=col,
+        confirm_schema_modification=lambda: True,
         addonManager=types.SimpleNamespace(
             addonFromModule=lambda name: name.split(".")[0],
             getConfig=lambda name: cfg,
@@ -95,6 +96,9 @@ def integration(col, monkeypatch):
     monkeypatch.setattr(ei.av_player, "play_tags", lambda tags: played.extend(t.filename for t in tags))
     monkeypatch.setattr(ei, "tooltip", lambda *a, **k: None)
     monkeypatch.setattr(ei, "showWarning", lambda msg, **k: warnings.append(msg))
+    asked = []
+    answer = {"yes": True}
+    monkeypatch.setattr(ei, "askUser", lambda msg, **k: asked.append(msg) or answer["yes"])
 
     class FakeUpdate:
         def __init__(self, note):
@@ -117,7 +121,7 @@ def integration(col, monkeypatch):
     provider = FakeProvider()
     monkeypatch.setattr(ei, "make_provider", lambda c: provider)
     return types.SimpleNamespace(
-        ei=ei, cfg=cfg, played=played, warnings=warnings, updated=updated, provider=provider, app=app
+        ei=ei, cfg=cfg, played=played, asked=asked, answer=answer, warnings=warnings, updated=updated, provider=provider, app=app
     )
 
 
@@ -126,6 +130,7 @@ def _editor(note, add_mode):
 
     e = types.SimpleNamespace(note=note, addMode=add_mode, widget=QWidget(), reloaded=0)
     e.loadNoteKeepingFocus = lambda: setattr(e, "reloaded", e.reloaded + 1)
+    e.set_note = lambda n, **k: setattr(e, "note", n)
     return e
 
 
@@ -325,3 +330,93 @@ def test_sync_addon_name(integration, monkeypatch):
     written.clear()
     ei._sync_addon_name()
     assert written == []
+
+
+# ---------------------------------------------------------------- only the current cloze plays
+
+
+def _av(card, side):
+    tags = card.question_av_tags() if side == "q" else card.answer_av_tags()
+    return [t.filename for t in tags]
+
+
+def test_cloze_field_only_current_cloze_plays(col, integration):
+    ei = integration.ei
+    note = col.new_note(col.models.by_name("Cloze"))
+    note["Text"] = "Stop being so {{c1::petty::kleinlich}} and {{c2::rude::unhöflich}}."
+    col.add_note(note, col.decks.id("Default"))
+    s = ei.NoteTypeSettings("Text", "Text", "en-GB", placement="cloze_field", cloze_text="sentence")
+    editor = _editor(note, False)
+    ei._run(editor, note, s, integration.cfg)
+
+    assert integration.warnings == [] and len(integration.asked) == 1
+    nt = col.models.by_name("Cloze")
+    assert "Cloze Audio" in [f["name"] for f in nt["flds"]]
+    assert "{{cloze-only:Cloze Audio}}" in nt["tmpls"][0]["afmt"]
+    assert integration.provider.calls == [("petty", "en-GB"), ("rude", "en-GB")]
+
+    fresh = col.get_note(note.id)
+    assert "[sound:" not in fresh["Text"]  # text stays clean
+    f_petty = core.media_filename("google_translate", "en-GB", "petty", False)
+    f_rude = core.media_filename("google_translate", "en-GB", "rude", False)
+    assert fresh["Cloze Audio"] == f"{{{{c1::[sound:{f_petty}]}}}} {{{{c2::[sound:{f_rude}]}}}}"
+
+    c1, c2 = sorted(fresh.cards(), key=lambda c: c.ord)
+    assert len(fresh.cards()) == 2
+    assert _av(c1, "q") == [] and _av(c2, "q") == []
+    assert _av(c1, "a") == [f_petty]
+    assert _av(c2, "a") == [f_rude]
+
+    # second run: no new setup question, no new download, same content
+    ei._run(_editor(fresh, False), fresh, s, integration.cfg)
+    assert len(integration.asked) == 1 and len(integration.provider.calls) == 2
+    assert col.get_note(note.id)["Cloze Audio"] == fresh["Cloze Audio"]
+
+
+def test_cloze_field_single_cloze_sentence_and_strips_old_in_text_audio(col, integration):
+    ei = integration.ei
+    note = col.new_note(col.models.by_name("Cloze"))
+    note["Text"] = "Stop being so {{c1::petty [sound:pron_en-GB_old.mp3]::kleinlich}}."
+    col.add_note(note, col.decks.id("Default"))
+    s = ei.NoteTypeSettings("Text", "Text", "en-GB", placement="cloze_field", cloze_text="sentence")
+    ei._run(_editor(note, False), note, s, integration.cfg)
+    fresh = col.get_note(note.id)
+    assert fresh["Text"] == "Stop being so {{c1::petty::kleinlich}}."
+    assert integration.provider.calls == [("Stop being so petty.", "en-GB")]
+    f = core.media_filename("google_translate", "en-GB", "Stop being so petty.", False)
+    card = fresh.cards()[0]
+    assert _av(card, "q") == [] and _av(card, "a") == [f]
+
+
+def test_cloze_field_add_mode_gets_fresh_note(col, integration):
+    ei = integration.ei
+    note = col.new_note(col.models.by_name("Cloze"))
+    note["Text"] = "{{c1::petty}} and {{c2::rude}}"
+    note.tags = ["vocab"]
+    editor = _editor(note, True)
+    ei._run(editor, note, ei.NoteTypeSettings("Text", "Text", "en-US", placement="cloze_field"), integration.cfg)
+    new = editor.note
+    assert new is not note and new.tags == ["vocab"] and new["Text"] == note["Text"]
+    assert new["Cloze Audio"].count("[sound:pron_en-US_") == 2
+
+
+def test_cloze_field_setup_declined(col, integration):
+    ei = integration.ei
+    integration.answer["yes"] = False
+    note = col.new_note(col.models.by_name("Cloze"))
+    note["Text"] = "{{c1::petty}}"
+    ei._run(_editor(note, True), note, ei.NoteTypeSettings("Text", "Text", "en-US", placement="cloze_field"), integration.cfg)
+    assert integration.provider.calls == []
+    assert "Cloze Audio" not in [f["name"] for f in col.models.by_name("Cloze")["flds"]]
+
+
+def test_dialog_offers_cloze_field_first(col, integration):
+    from pronunciation_tts.dialog import NoteTypeSettings, SettingsDialog
+
+    nt = col.models.by_name("Cloze")
+    fields, fronts, backs = _nt_parts(nt)
+    dlg = SettingsDialog(None, fields, fronts, backs, NoteTypeSettings("Text", "Text", "en-GB"), "Cloze", is_cloze=True)
+    assert [dlg.placement.itemData(i) for i in range(dlg.placement.count())] == ["cloze_field", "cloze", "field"]
+    assert dlg.placement.currentData() == "field"  # initial value respected
+    defaults = integration.ei._default_settings({}, fields, fronts, backs, True)
+    assert defaults.placement == "cloze_field"

@@ -170,3 +170,54 @@ def field_is_cloze_rendered(field: str, front_templates) -> bool:
             if len(parts) >= 2 and parts[-1] == field and "cloze" in parts[:-1]:
                 return True
     return False
+
+
+# ---------------------------------------------------------------- per-cloze audio field
+#
+# Only the *current* cloze's audio, only on the back: the audio lives in its own
+# field, wrapped in matching cloze numbers,
+#     Cloze Audio = "{{c1::[sound:petty.mp3]}} {{c2::[sound:rude.mp3]}}"
+# and the back template renders it with ``{{cloze-only:Cloze Audio}}``, which
+# outputs just the active deletion. The front never shows the field.
+
+PLACEMENT_CLOZE_FIELD = "cloze_field"
+PLACEMENTS = (PLACEMENT_FIELD, PLACEMENT_CLOZE, PLACEMENT_CLOZE_FIELD)
+CLOZE_PLACEMENTS = (PLACEMENT_CLOZE, PLACEMENT_CLOZE_FIELD)
+CLOZE_AUDIO_FIELD = "Cloze Audio"
+
+
+def cloze_only_on_back(field: str, back_templates) -> bool:
+    """True if a back template renders ``field`` with the ``cloze-only:`` filter."""
+    for t in back_templates:
+        for raw in _TEMPLATE_TAG_RE.findall(t or ""):
+            parts = [p.strip() for p in raw.strip().split(":")]
+            if len(parts) >= 2 and parts[-1] == field and "cloze-only" in parts[:-1]:
+                return True
+    return False
+
+
+def add_cloze_only(back_template: str, field: str = CLOZE_AUDIO_FIELD) -> str:
+    """Append ``{{cloze-only:field}}`` to a back template (idempotent)."""
+    if cloze_only_on_back(field, [back_template]):
+        return back_template
+    return f"{(back_template or '').rstrip()}\n\n{{{{cloze-only:{field}}}}}"
+
+
+def build_cloze_audio(text_html: str, cloze_text: str, stored: dict, sentence: str = "") -> str:
+    """Content of the per-cloze audio field for the clozes in ``text_html``.
+
+    ``stored`` maps spoken text -> media filename. In ``word`` mode each deletion
+    gets the file of its own answer; in ``sentence`` mode every cloze number gets
+    the file of ``sentence``.
+    """
+    parts: list[str] = []
+    seen: set[tuple[int, str]] = set()
+    for num, answer in cloze_answers(text_html):
+        fname = stored.get(answer if cloze_text == CLOZE_TEXT_WORD else sentence)
+        if not fname or (num, fname) in seen:
+            continue
+        if not re.fullmatch(r"[A-Za-z0-9_.-]+", fname):
+            raise ValueError("unsafe media filename")
+        seen.add((num, fname))
+        parts.append(f"{{{{c{num}::[sound:{fname}]}}}}")
+    return " ".join(parts)

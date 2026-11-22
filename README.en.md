@@ -43,10 +43,29 @@ Two speaker buttons appear in the editor:
 The first time you use it for a note type, a dialog opens; your choices are then remembered for that note type:
 - **Read text from field**: the field holding the foreign word or sentence (e.g. "Back"; for clozes "Text", where the whole sentence is read, answers included).
 - **Insert audio into field**: a field that is shown **only on the back** (e.g. "Back", "Back Extra" or your own "Audio" field). Front-side fields are refused so the audio can't give the answer away.
-- **Insert audio** (cloze note types only): into a back-side field or directly into the cloze (see below).
+- **Insert audio** (cloze note types only): only the current cloze (recommended), directly into the cloze text, or into a back-side field (see below).
 - **Language / accent**: e.g. English (British / American / Australian / Indian …), French (France / Canada), Spanish (Spain / Mexico), Portuguese (Brazil / Portugal) and many more.
 
-### Audio directly inside the cloze
+### Cloze: play only the current cloze (recommended)
+For cloze notes, **"Only the current cloze (own audio field)"** is preselected under
+**"Insert audio"**. Then
+
+    Stop being so {{c1::petty::kleinlich}} and {{c2::rude::unhöflich}}.
+
+gets a (new) field **"Cloze Audio"** containing
+
+    {{c1::[sound:…petty….mp3]}} {{c2::[sound:…rude….mp3]}}
+
+The back template shows `{{cloze-only:Cloze Audio}}`, so every card plays **only the word of
+its own cloze** (card c1 only "petty", card c2 only "rude") and nothing on the front. The
+cloze text itself stays clean.
+
+The first time, the add-on asks before adding the field "Cloze Audio" and the line
+`{{cloze-only:Cloze Audio}}` to the back template. Adding a field changes the note type, so
+Anki may ask for one full sync afterwards. If you remove a cloze later, just click the button
+again and the field is rebuilt.
+
+### Alternative: audio directly inside the cloze
 For cloze notes, choose **"Directly into the cloze"** under "Insert audio". Then
 
     Stop being so {{c1::petty::kleinlich}}.
@@ -61,15 +80,10 @@ after revealing it. Under **"Read aloud"** you choose:
 - **Cloze word only**: "petty" (each cloze gets its own audio)
 
 **Several clozes = several foreign words:** if a note has several cloze *numbers*
-(`c1`, `c2` …), each cloze automatically gets **only its own word**, even if "Whole
-sentence" is selected:
-
-    Stop being so {{c1::petty [sound:…petty…]::kleinlich}} and {{c2::rude [sound:…rude…]::unhöflich}}.
-
-On the card for c1, cloze c2 is visible as plain text, so its word is already read aloud on
-the front. That is only the visible word; the answer you are asked for (c1) is only heard
-after revealing. Several clozes with the *same* number (`{{c1::…}} … {{c1::…}}`) count as one
-cloze; your setting applies there.
+(`c1`, `c2` …), each cloze automatically gets **only its own word**, even if "Whole sentence"
+is selected. This applies to both cloze options. With "Directly into the cloze text", the audio
+of the *other* clozes on a card plays too (they are visible there); use "Only the current
+cloze" to avoid that.
 
 Tip for "Basic (and reversed card)": both fields appear on a front side. Add an extra field
 `Audio` and put `{{Audio}}` only on the back template of the card you want.

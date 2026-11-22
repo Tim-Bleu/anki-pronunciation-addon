@@ -46,10 +46,30 @@ Die Oberfläche ist auf **Deutsch oder Englisch** – automatisch passend zur Sp
 Beim ersten Mal pro Notiztyp öffnet sich der Dialog; die Auswahl wird danach für den Notiztyp gemerkt:
 - **Text vorlesen aus Feld** – das Feld mit dem Fremdwort/-satz (z. B. „Back“; bei Lückentext „Text“ – die Lücken werden komplett vorgelesen).
 - **Audio einfügen in Feld** – ein Feld, das **nur auf der Rückseite** steht (z. B. „Back“, „Back Extra“ oder ein eigenes Feld „Audio“). Felder der Vorderseite werden abgelehnt, damit das Audio nichts verrät.
-- **Audio einfügen** (nur bei Lückentext) – in ein Feld der Rückseite oder direkt in die Lücke (siehe unten).
+- **Audio einfügen** (nur bei Lückentext) – nur die aktuelle Lücke (empfohlen), direkt in die Lücke oder in ein Feld der Rückseite (siehe unten).
 - **Sprache / Akzent** – z. B. Englisch (Britisch / Amerikanisch / Australisch / Indisch …), Französisch (Frankreich / Kanada), Spanisch (Spanien / Mexiko), Portugiesisch (Brasilien / Portugal) u. v. m.
 
-### Audio direkt in die Lücke (Lückentext)
+### Lückentext: nur die aktuelle Lücke abspielen (empfohlen)
+Bei Lückentext-Notizen ist unter **„Audio einfügen“** die Option
+**„Nur die aktuelle Lücke (eigenes Audio-Feld)“** voreingestellt. Aus
+
+    Stop being so {{c1::petty::kleinlich}} and {{c2::rude::unhöflich}}.
+
+wird dann im (neuen) Feld **„Cloze Audio“**
+
+    {{c1::[sound:…petty….mp3]}} {{c2::[sound:…rude….mp3]}}
+
+Auf der Rückseite steht `{{cloze-only:Cloze Audio}}`. So spielt jede Karte **nur das Wort
+ihrer eigenen Lücke** – Karte c1 nur „petty“, Karte c2 nur „rude“ – und auf der
+Vorderseite gar nichts. Der Lückentext selbst bleibt sauber.
+
+Beim ersten Mal fragt das Add-on, ob es dem Notiztyp das Feld „Cloze Audio“ und die Zeile
+`{{cloze-only:Cloze Audio}}` auf der Rückseite hinzufügen darf. Weil ein neues Feld
+eine Änderung am Notiztyp ist, verlangt Anki danach ggf. einmal eine vollständige
+Synchronisierung. Hast du später eine Lücke entfernt, klicke den Knopf einfach erneut –
+das Feld wird neu aufgebaut.
+
+### Alternativ: Audio direkt in die Lücke
 Bei Lückentext-Notizen kannst du im Dialog unter **„Audio einfügen“** die Option
 **„Direkt in die Lücke (im Lückentext)“** wählen. Dann wird aus
 
@@ -66,14 +86,9 @@ du das Audio erst nach dem Aufdecken. Unter **„Vorlesen“** wählst du:
 
 **Mehrere Lücken = mehrere Fremdwörter:** Hat eine Notiz mehrere Lücken-*Nummern*
 (`c1`, `c2` …), bekommt jede Lücke automatisch nur **ihr eigenes Wort** – auch wenn
-„Ganzen Satz“ eingestellt ist:
-
-    Stop being so {{c1::petty [sound:…petty…]::kleinlich}} and {{c2::rude [sound:…rude…]::unhöflich}}.
-
-Auf der Karte für c1 ist die Lücke c2 als normaler Text sichtbar und wird daher schon auf
-der Vorderseite vorgelesen. Das ist nur das sichtbare Wort – die gesuchte Lösung (c1) hörst
-du erst nach dem Aufdecken. Mehrere Lücken mit *derselben* Nummer (`{{c1::…}} … {{c1::…}}`)
-zählen als eine Lücke; dort gilt deine Einstellung.
+„Ganzen Satz“ eingestellt ist. Das gilt für beide Lückentext-Optionen. Bei „Direkt in die
+Lücke“ werden allerdings auch die Audios der *anderen* Lücken einer Karte abgespielt (sie
+sind dort sichtbar) – wer das nicht möchte, nimmt „Nur die aktuelle Lücke“.
 
 Tipp für Notiztyp „Einfach (mit umgekehrter Karte)“: Hier stehen beide Felder auf einer
 Vorderseite. Lege ein zusätzliches Feld `Audio` an und füge `{{Audio}}` nur in die

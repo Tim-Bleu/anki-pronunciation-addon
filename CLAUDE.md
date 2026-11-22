@@ -45,7 +45,14 @@ All downloads go through `net.request`. Never use `urllib`, `requests`,
 
 ## Behavioural rules
 - Never insert audio into a field rendered on a front template (`core.field_on_front`); the dialog disables OK and `_run` re-checks.
-- Exception, placement `"cloze"` (cloze note types only): the tag goes *inside* the deletion,
+- Placement `"cloze_field"` (cloze note types only, default for them): audio goes into the field
+  `core.CLOZE_AUDIO_FIELD` ("Cloze Audio") as `{{c1::[sound:a]}} {{c2::[sound:b]}}`, rendered on the
+  back with `{{cloze-only:Cloze Audio}}` → each card plays only its own cloze, nothing on the front
+  (verified with real Anki in `tests/test_anki_integration.py`). The field/template line are added
+  once after `askUser` + `mw.confirm_schema_modification()` (`_ensure_cloze_audio_field`); in add mode
+  the editor gets a fresh note with the new field. The field is rebuilt from the text on every run;
+  our in-text tags are stripped from the text.
+- Alternative placement `"cloze"` (cloze note types only): the tag goes *inside* the deletion,
   `{{c1::petty [sound:pron_….mp3]::kleinlich}}` (before the hint). Anki hides the active deletion
   on the front, so it plays only on the back (verified via `card.question_av_tags()` in
   `tests/test_anki_integration.py`). On card c2 the deletion c1 is visible on the front, so its
