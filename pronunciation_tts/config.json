@@ -1,0 +1,13 @@
+{
+    "language": "auto",
+    "provider": "google_translate",
+    "default_voice": "en-GB",
+    "slow": false,
+    "google_cloud_api_key": "",
+    "google_cloud_voice_name": "",
+    "replace_existing_audio": true,
+    "play_after_insert": true,
+    "shortcut_generate": "Ctrl+Alt+P",
+    "shortcut_settings": "Ctrl+Alt+Shift+P",
+    "note_types": {}
+}
