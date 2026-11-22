@@ -96,7 +96,9 @@ def default_fields(
 # ``{{c1::petty [sound:x.mp3]::kleinlich}}``: on card 1 the deletion is hidden on
 # the front, so Anki only plays x.mp3 on the back. Caveat: on *other* cards
 # (c2, c3 …) this deletion is shown as plain text on the front, so its audio
-# would play there – callers warn about notes with several cloze numbers.
+# plays there too. That only repeats the visible word and never reveals the
+# answer of the card being studied. With several cloze numbers each deletion
+# gets only its own word (``effective_cloze_text``).
 
 _NB = r"(?:(?!\{\{|\}\}).)*?"
 _CLOZE_PARTS_RE = re.compile(r"\{\{c(\d+)::(" + _NB + r")(?:::(" + _NB + r"))?\}\}", re.DOTALL)
@@ -123,6 +125,12 @@ def cloze_answers(field_html: str) -> list[tuple[int, str]]:
 
 def cloze_numbers(field_html: str) -> set[int]:
     return {num for num, _ in cloze_answers(field_html)}
+
+
+def effective_cloze_text(field_html: str, setting: str) -> str:
+    """Several cloze numbers (c1, c2 …) mean several foreign words: then every
+    deletion gets only the audio of its own word. Otherwise ``setting`` applies."""
+    return CLOZE_TEXT_WORD if len(cloze_numbers(field_html)) > 1 else setting
 
 
 def insert_sound_in_clozes(field_html: str, pick, replace_existing: bool = True) -> str:
