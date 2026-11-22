@@ -1,11 +1,12 @@
-**Aussprache (TTS) – Konfiguration**
+**Pronunciation (TTS) – configuration / Konfiguration**
 
-- `provider`: `"google_translate"` (kostenlos, ohne Schlüssel) oder `"google_cloud"` (offizielle Google Cloud Text-to-Speech API, API-Schlüssel nötig).
-- `default_voice`: Standard-Sprache/Akzent, z. B. `"en-GB"` (britisch), `"en-US"` (amerikanisch), `"en-AU"`, `"fr-FR"`, `"fr-CA"`, `"es-ES"`, `"es-MX"`, `"pt-BR"`, `"pt-PT"`, `"de-DE"`, `"it-IT"`, `"ja-JP"` …
-- `slow`: `true` = langsamer sprechen.
-- `google_cloud_api_key`: nur für `google_cloud`. Wird nur per HTTPS-Header an `texttospeech.googleapis.com` gesendet.
-- `google_cloud_voice_name`: optional, z. B. `"en-GB-Neural2-B"`. Wird nur verwendet, wenn er zur gewählten Sprache passt.
-- `replace_existing_audio`: `true` = vorher von diesem Add-on eingefügte Audios im Zielfeld ersetzen.
-- `play_after_insert`: Audio nach dem Einfügen einmal zur Kontrolle abspielen.
-- `shortcut_generate` / `shortcut_settings`: Tastenkürzel im Editor.
-- `note_types`: Gemerkte Einstellungen pro Notiztyp (Quellfeld, Zielfeld, Stimme, Einfügeort `placement`: `"field"` = in ein Feld der Rückseite, `"cloze"` = direkt in die Lücke; `cloze_text`: `"sentence"` oder `"word"`). Wird vom Add-on selbst gepflegt, am einfachsten über den zweiten Lautsprecher-Knopf ändern.
+- `language`: `"auto"` (follow Anki / wie Anki), `"en"` or `"de"`. UI language of the add-on; takes effect after restarting Anki.
+- `provider`: `"google_translate"` (free, no key / kostenlos, ohne Schlüssel) or `"google_cloud"` (official Google Cloud Text-to-Speech API, needs an API key / API-Schlüssel nötig).
+- `default_voice`: default language/accent, e.g. `"en-GB"` (British), `"en-US"` (American), `"en-AU"`, `"fr-FR"`, `"fr-CA"`, `"es-ES"`, `"es-MX"`, `"pt-BR"`, `"pt-PT"`, `"de-DE"`, `"it-IT"`, `"ja-JP"` …
+- `slow`: `true` = speak slowly / langsam sprechen (default for new note types).
+- `google_cloud_api_key`: only for `google_cloud`. Sent only in an HTTPS header to `texttospeech.googleapis.com`.
+- `google_cloud_voice_name`: optional, e.g. `"en-GB-Neural2-B"`; only used if it matches the chosen language.
+- `replace_existing_audio`: `true` = replace audio previously inserted by this add-on / vorher eingefügte Audios ersetzen.
+- `play_after_insert`: play the audio once after inserting / nach dem Einfügen einmal abspielen.
+- `shortcut_generate` / `shortcut_settings`: editor shortcuts / Tastenkürzel im Editor.
+- `note_types`: settings remembered per note type (source field, target field, voice, `placement`: `"field"` = back-side field, `"cloze"` = inside the cloze; `cloze_text`: `"sentence"` or `"word"`). Maintained by the add-on – easiest to change with the second speaker button.

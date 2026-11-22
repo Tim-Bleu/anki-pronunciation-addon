@@ -15,6 +15,7 @@ from collections.abc import Callable
 
 from . import net
 from .audio import validate_mp3
+from .i18n import tr
 from .text import split_text
 from .voices import Voice, google_translate_hosts
 
@@ -58,19 +59,19 @@ class GoogleTranslateProvider(Provider):
     """
 
     id = "google_translate"
-    label = "Google Translate (kostenlos, kein Schlüssel)"
+    label = "Google Translate"
     CHUNK_LEN = 100
 
     def synthesize(self, text: str, voice: Voice, *, slow: bool = False) -> bytes:
         text = text.strip()
         if not text:
-            raise TTSError("Kein Text zum Vorlesen vorhanden.")
+            raise TTSError(tr("tts.no_text"))
         if len(text) > MAX_TEXT_CHARS:
-            raise TTSError(f"Der Text ist zu lang (max. {MAX_TEXT_CHARS} Zeichen).")
+            raise TTSError(tr("tts.too_long", max=MAX_TEXT_CHARS))
         hosts = google_translate_hosts()
         host = f"translate.google.{voice.gt_tld}"
         if host not in hosts:  # pragma: no cover - guarded by catalogue
-            raise TTSError("Ungültige Stimme.")
+            raise TTSError(tr("tts.bad_voice"))
         parts = []
         for chunk in split_text(text, self.CHUNK_LEN):
             parts.append(self._chunk(chunk, voice, host, hosts, slow))
@@ -104,11 +105,11 @@ class GoogleTranslateProvider(Provider):
             max_bytes=4 * 1024 * 1024,
         )
         if resp.status != 200:
-            raise TTSError(f"Google Translate antwortete mit HTTP {resp.status}.")
+            raise TTSError(tr("tts.gt_status", code=resp.status))
         text = resp.body.decode("utf-8", errors="replace")
         match = _GT_AUDIO_RE.search(text)
         if not match:
-            raise TTSError("Google Translate hat keine Audiodaten geliefert.")
+            raise TTSError(tr("tts.gt_no_audio"))
         return validate_mp3(_b64decode(match.group(1)))
 
     def _legacy(self, chunk, voice, host, hosts, slow) -> bytes:
@@ -128,7 +129,7 @@ class GoogleTranslateProvider(Provider):
             max_bytes=4 * 1024 * 1024,
         )
         if resp.status != 200 or not resp.content_type.startswith("audio/"):
-            raise TTSError("Google Translate hat keine Audiodatei geliefert.")
+            raise TTSError(tr("tts.gt_no_audio"))
         return validate_mp3(resp.body)
 
 
@@ -143,28 +144,25 @@ _API_KEY_RE = re.compile(r"^[A-Za-z0-9_-]{20,100}$")
 
 class GoogleCloudProvider(Provider):
     id = "google_cloud"
-    label = "Google Cloud Text-to-Speech (API-Schlüssel nötig)"
+    label = "Google Cloud Text-to-Speech"
 
     def __init__(self, api_key: str, voice_name: str = "", requester: Requester = net.request) -> None:
         super().__init__(requester)
         api_key = (api_key or "").strip()
         if not _API_KEY_RE.match(api_key):
-            raise TTSError(
-                "Für Google Cloud TTS fehlt ein gültiger API-Schlüssel "
-                "(Extras → Add-ons → Konfiguration)."
-            )
+            raise TTSError(tr("tts.cloud_no_key"))
         voice_name = (voice_name or "").strip()
         if voice_name and not _VOICE_NAME_RE.match(voice_name):
-            raise TTSError("Ungültiger Stimmenname für Google Cloud TTS.")
+            raise TTSError(tr("tts.cloud_bad_voice_name"))
         self._api_key = api_key
         self._voice_name = voice_name
 
     def synthesize(self, text: str, voice: Voice, *, slow: bool = False) -> bytes:
         text = text.strip()
         if not text:
-            raise TTSError("Kein Text zum Vorlesen vorhanden.")
+            raise TTSError(tr("tts.no_text"))
         if len(text) > MAX_TEXT_CHARS:
-            raise TTSError(f"Der Text ist zu lang (max. {MAX_TEXT_CHARS} Zeichen).")
+            raise TTSError(tr("tts.too_long", max=MAX_TEXT_CHARS))
         voice_cfg: dict = {"languageCode": voice.cloud_code}
         # A specific voice name only makes sense if it belongs to the language.
         if self._voice_name and self._voice_name.lower().startswith(voice.cloud_code.lower()):
@@ -187,28 +185,28 @@ class GoogleCloudProvider(Provider):
         try:
             doc = json.loads(resp.body.decode("utf-8"))
         except (UnicodeDecodeError, ValueError):
-            raise TTSError(f"Unerwartete Antwort von Google Cloud (HTTP {resp.status}).") from None
+            raise TTSError(tr("tts.cloud_unexpected", code=resp.status)) from None
         if resp.status != 200:
             msg = ""
             if isinstance(doc, dict) and isinstance(doc.get("error"), dict):
                 msg = str(doc["error"].get("message", ""))[:300]
-            raise TTSError(f"Google Cloud TTS-Fehler (HTTP {resp.status}): {msg}".strip())
+            raise TTSError(tr("tts.cloud_error", code=resp.status, msg=msg).strip())
         content = doc.get("audioContent") if isinstance(doc, dict) else None
         if not isinstance(content, str):
-            raise TTSError("Google Cloud TTS hat keine Audiodaten geliefert.")
+            raise TTSError(tr("tts.cloud_no_audio"))
         return validate_mp3(_b64decode(content))
 
 
 def _b64decode(value: str) -> bytes:
     value = value.strip()
     if not _B64_ALPHABET_RE.match(value):
-        raise TTSError("Audiodaten sind beschädigt.")
+        raise TTSError(tr("tts.corrupt"))
     try:
         if "-" in value or "_" in value:
             return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
         return base64.b64decode(value + "=" * (-len(value) % 4), validate=True)
     except (binascii.Error, ValueError):
-        raise TTSError("Audiodaten sind beschädigt.") from None
+        raise TTSError(tr("tts.corrupt")) from None
 
 
 PROVIDER_IDS = (GoogleTranslateProvider.id, GoogleCloudProvider.id)
@@ -224,4 +222,4 @@ def make_provider(config: dict, requester: Requester = net.request) -> Provider:
         )
     if pid == GoogleTranslateProvider.id:
         return GoogleTranslateProvider(requester=requester)
-    raise TTSError(f"Unbekannter Anbieter: {pid!r}")
+    raise TTSError(tr("tts.unknown_provider", pid=pid))

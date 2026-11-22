@@ -16,7 +16,7 @@ from aqt.qt import (
 )
 
 from . import core
-from .providers import GoogleCloudProvider, GoogleTranslateProvider
+from .i18n import tr
 from .voices import VOICES
 
 
@@ -26,7 +26,6 @@ class NoteTypeSettings:
     target: str
     voice: str
     slow: bool = False
-    provider: str = GoogleTranslateProvider.id
     # "field": append to target field; "cloze": put audio inside the cloze deletion(s)
     placement: str = core.PLACEMENT_FIELD
     # only for placement "cloze": speak the whole sentence or only the cloze answer
@@ -34,6 +33,9 @@ class NoteTypeSettings:
 
 
 class SettingsDialog(QDialog):
+    """Asks for fields, placement and accent. Settings are always remembered
+    per note type by the caller; the service (provider) lives in the config."""
+
     def __init__(
         self,
         parent: QWidget | None,
@@ -45,7 +47,7 @@ class SettingsDialog(QDialog):
         is_cloze: bool = False,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Aussprache einfügen")
+        self.setWindowTitle(tr("dlg.title"))
         self._front = front_templates
         self._back = back_templates
         self._is_cloze = is_cloze
@@ -53,59 +55,56 @@ class SettingsDialog(QDialog):
         self.source = QComboBox()
         self.source.addItems(field_names)
         self.placement = QComboBox()
-        self.placement.addItem("In ein Feld der Rückseite", core.PLACEMENT_FIELD)
+        self.placement.addItem(tr("dlg.placement_field"), core.PLACEMENT_FIELD)
         if is_cloze:
-            self.placement.addItem("Direkt in die Lücke (im Lückentext)", core.PLACEMENT_CLOZE)
+            self.placement.addItem(tr("dlg.placement_cloze"), core.PLACEMENT_CLOZE)
         self.target = QComboBox()
         self.target.addItems(field_names)
         self.cloze_text = QComboBox()
-        self.cloze_text.addItem("Ganzen Satz vorlesen", core.CLOZE_TEXT_SENTENCE)
-        self.cloze_text.addItem("Nur das Lückenwort vorlesen", core.CLOZE_TEXT_WORD)
+        self.cloze_text.addItem(tr("dlg.cloze_sentence"), core.CLOZE_TEXT_SENTENCE)
+        self.cloze_text.addItem(tr("dlg.cloze_word"), core.CLOZE_TEXT_WORD)
         self.voice = QComboBox()
-        for v in VOICES:
+        for v in sorted(VOICES, key=lambda v: v.label.casefold()):
             self.voice.addItem(v.label, v.id)
-        self.provider = QComboBox()
-        for pid, label in (
-            (GoogleTranslateProvider.id, GoogleTranslateProvider.label),
-            (GoogleCloudProvider.id, GoogleCloudProvider.label),
-        ):
-            self.provider.addItem(label, pid)
-        self.slow = QCheckBox("Langsam sprechen")
-        self.remember = QCheckBox(f"Für Notiztyp „{note_type_name}“ merken (nächstes Mal ohne Nachfrage)")
-        self.remember.setChecked(True)
+        self.slow = QCheckBox(tr("dlg.slow"))
         self.warning = QLabel()
         self.warning.setWordWrap(True)
+        hint = QLabel(f"<small>{tr('dlg.remember_hint', name=note_type_name)}</small>")
+        hint.setWordWrap(True)
 
         _select(self.source, initial.source)
         _select(self.target, initial.target)
         _select_data(self.placement, initial.placement)
         _select_data(self.cloze_text, initial.cloze_text)
         _select_data(self.voice, initial.voice)
-        _select_data(self.provider, initial.provider)
         self.slow.setChecked(initial.slow)
 
         form = QFormLayout()
-        form.addRow("Text vorlesen aus Feld:", self.source)
-        form.addRow("Audio einfügen:", self.placement)
-        self._target_label = QLabel("Audio einfügen in Feld:")
+        form.addRow(tr("dlg.source"), self.source)
+        self._placement_label = QLabel(tr("dlg.placement"))
+        form.addRow(self._placement_label, self.placement)
+        self._target_label = QLabel(tr("dlg.target"))
         form.addRow(self._target_label, self.target)
-        self._cloze_text_label = QLabel("Vorlesen:")
+        self._cloze_text_label = QLabel(tr("dlg.cloze_text"))
         form.addRow(self._cloze_text_label, self.cloze_text)
-        form.addRow("Sprache / Akzent:", self.voice)
-        form.addRow("Dienst:", self.provider)
+        form.addRow(tr("dlg.voice"), self.voice)
         form.addRow("", self.slow)
+
+        # Only cloze note types have a choice of placement.
+        self._placement_label.setVisible(is_cloze)
+        self.placement.setVisible(is_cloze)
 
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
-        self.buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Aussprache einfügen")
+        self.buttons.button(QDialogButtonBox.StandardButton.Ok).setText(tr("dlg.ok"))
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
 
         layout = QVBoxLayout(self)
         layout.addLayout(form)
         layout.addWidget(self.warning)
-        layout.addWidget(self.remember)
+        layout.addWidget(hint)
         layout.addWidget(self.buttons)
 
         self.target.currentIndexChanged.connect(self._update)
@@ -122,9 +121,8 @@ class SettingsDialog(QDialog):
             w.setVisible(not in_cloze)
         for w in (self.cloze_text, self._cloze_text_label):
             w.setVisible(in_cloze)
-        ok_button = self.buttons.button(QDialogButtonBox.StandardButton.Ok)
         ok, text = self._check()
-        ok_button.setEnabled(ok)
+        self.buttons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(ok)
         self.warning.setText(text)
         self.adjustSize()
 
@@ -132,31 +130,15 @@ class SettingsDialog(QDialog):
         if self._in_cloze():
             source = self.source.currentText()
             if not core.field_is_cloze_rendered(source, self._front):
-                return False, (
-                    "⚠ Das Feld „%s“ ist kein Lückentext-Feld (<code>{{cloze:%s}}</code>). "
-                    "Bitte das Feld mit den Lücken wählen." % (source, source)
-                )
-            return True, (
-                "✔ Das Audio steht in der Lücke und wird erst nach dem Aufdecken abgespielt.<br>"
-                "<small>Hinweis: Hat eine Notiz mehrere Lücken-Nummern (c1, c2 …), ist auf der "
-                "Karte c1 die Lücke c2 sichtbar – deren Audio wäre dort schon auf der Vorderseite "
-                "zu hören. Dafür besser „In ein Feld der Rückseite“ wählen.</small>"
-            )
+                return False, tr("dlg.not_cloze_field", f=source)
+            return True, tr("dlg.cloze_ok")
         target = self.target.currentText()
         if core.field_on_front(target, self._front):
-            return False, (
-                "⚠ Das Feld „%s“ wird auf der <b>Vorderseite</b> angezeigt – das Audio würde "
-                "die Lösung verraten. Bitte ein Feld wählen, das nur auf der Rückseite steht "
-                "(z. B. „Back Extra“ oder ein eigenes Feld „Audio“)%s."
-                % (target, " oder „Direkt in die Lücke“" if self._is_cloze else "")
-            )
+            extra = tr("dlg.on_front_cloze_extra") if self._is_cloze else ""
+            return False, tr("dlg.on_front", f=target, extra=extra)
         if not core.field_on_back(target, self._back):
-            return True, (
-                "⚠ Das Feld „%s“ kommt in keiner Rückseiten-Vorlage vor – das Audio wäre "
-                "beim Lernen nicht zu hören. Füge <code>{{%s}}</code> in die Rückseite der "
-                "Kartenvorlage ein." % (target, target)
-            )
-        return True, "✔ Das Audio wird erst nach dem Aufdecken der Karte abgespielt."
+            return True, tr("dlg.not_on_back", f=target)
+        return True, tr("dlg.back_ok")
 
     def result_settings(self) -> NoteTypeSettings:
         return NoteTypeSettings(
@@ -164,7 +146,6 @@ class SettingsDialog(QDialog):
             target=self.target.currentText(),
             voice=self.voice.currentData(),
             slow=self.slow.isChecked(),
-            provider=self.provider.currentData(),
             placement=self.placement.currentData(),
             cloze_text=self.cloze_text.currentData(),
         )

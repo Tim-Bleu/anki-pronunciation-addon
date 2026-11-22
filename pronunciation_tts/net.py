@@ -21,6 +21,8 @@ import urllib.request
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 
+from .i18n import tr
+
 DEFAULT_TIMEOUT = 15.0
 DEFAULT_MAX_BYTES = 6 * 1024 * 1024
 USER_AGENT = (
@@ -62,21 +64,18 @@ def make_ssl_context(cafile: str | None = None) -> ssl.SSLContext:
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: D401
-        raise DownloadError(
-            f"Der Server hat eine Weiterleitung geschickt (HTTP {code}); "
-            "aus Sicherheitsgründen wird ihr nicht gefolgt."
-        )
+        raise DownloadError(tr("net.redirect", code=code))
 
 
 def check_url(url: str, allowed_hosts: Iterable[str]) -> urllib.parse.SplitResult:
     parts = urllib.parse.urlsplit(url)
     if parts.scheme != "https":
-        raise DownloadError("Nur HTTPS-Verbindungen sind erlaubt.")
+        raise DownloadError(tr("net.https_only"))
     if parts.username or parts.password:
-        raise DownloadError("Zugangsdaten in URLs sind nicht erlaubt.")
+        raise DownloadError(tr("net.no_credentials"))
     host = (parts.hostname or "").lower()
     if not host or host not in {h.lower() for h in allowed_hosts}:
-        raise DownloadError(f"Host {host!r} ist nicht auf der Erlaubt-Liste.")
+        raise DownloadError(tr("net.host_not_allowed", host=host))
     return parts
 
 
@@ -115,27 +114,25 @@ def request(
         if accept_error_body:
             body = _read_limited(e, max_bytes)
             return Response(e.code, dict(e.headers or {}), body)
-        raise DownloadError(f"Der Server antwortete mit HTTP {e.code}.") from None
+        raise DownloadError(tr("net.http_status", code=e.code)) from None
     except ssl.SSLError as e:
-        raise DownloadError(f"Sichere Verbindung fehlgeschlagen (TLS): {e.reason or e}") from None
+        raise DownloadError(tr("net.tls", reason=e.reason or e)) from None
     except urllib.error.URLError as e:
         reason = e.reason
         if isinstance(reason, ssl.SSLError):
-            raise DownloadError(
-                f"Sichere Verbindung fehlgeschlagen (TLS): {reason.reason or reason}"
-            ) from None
-        raise DownloadError(f"Verbindung fehlgeschlagen: {reason}") from None
+            raise DownloadError(tr("net.tls", reason=reason.reason or reason)) from None
+        raise DownloadError(tr("net.connect", reason=reason)) from None
     except TimeoutError:
-        raise DownloadError("Zeitüberschreitung beim Herunterladen.") from None
+        raise DownloadError(tr("net.timeout")) from None
     except OSError as e:
-        raise DownloadError(f"Netzwerkfehler: {e}") from None
+        raise DownloadError(tr("net.network", reason=e)) from None
 
     with resp:
         # Defence in depth: make sure we really ended up where we wanted.
         check_url(resp.geturl(), allowed_hosts)
         declared = resp.headers.get("Content-Length")
         if declared and declared.isdigit() and int(declared) > max_bytes:
-            raise DownloadError("Die Antwort des Servers ist zu groß.")
+            raise DownloadError(tr("net.too_big"))
         body = _read_limited(resp, max_bytes)
         return Response(resp.status, dict(resp.headers), body)
 
@@ -150,12 +147,12 @@ def _read_limited(fp, max_bytes: int) -> bytes:
                 break
             total += len(chunk)
             if total > max_bytes:
-                raise DownloadError("Die Antwort des Servers ist zu groß.")
+                raise DownloadError(tr("net.too_big"))
             chunks.append(chunk)
     except DownloadError:
         raise
     except TimeoutError:
-        raise DownloadError("Zeitüberschreitung beim Herunterladen.") from None
+        raise DownloadError(tr("net.timeout")) from None
     except OSError as e:
-        raise DownloadError(f"Netzwerkfehler beim Lesen: {e}") from None
+        raise DownloadError(tr("net.network", reason=e)) from None
     return b"".join(chunks)

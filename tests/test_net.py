@@ -79,7 +79,7 @@ def test_rejects_plain_http():
 
 
 def test_rejects_unlisted_host():
-    with pytest.raises(net.DownloadError, match="Erlaubt-Liste"):
+    with pytest.raises(net.DownloadError, match="allow-list"):
         net.request("https://evil.example/", allowed_hosts=ALLOWED)
 
 
@@ -111,12 +111,12 @@ def test_trusted_ok(server, trusted):
 
 
 def test_redirect_not_followed(server, trusted):
-    with pytest.raises(net.DownloadError, match="Weiterleitung"):
+    with pytest.raises(net.DownloadError, match="redirect"):
         net.request(server + "/redirect", allowed_hosts=ALLOWED, ssl_context=trusted)
 
 
 def test_size_limit(server, trusted):
-    with pytest.raises(net.DownloadError, match="zu groß"):
+    with pytest.raises(net.DownloadError, match="too large"):
         net.request(server + "/big", allowed_hosts=ALLOWED, ssl_context=trusted, max_bytes=1000)
 
 

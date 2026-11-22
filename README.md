@@ -27,9 +27,13 @@ Im Editor erscheinen zwei Lautsprecher-Knöpfe:
 | 🔊 | `Strg+Alt+P` | Aussprache sofort einfügen (mit den gemerkten Einstellungen) |
 | 🔊⚙ | `Strg+Alt+Shift+P` | Felder, Sprache/Akzent und Dienst wählen |
 
-Beim ersten Mal pro Notiztyp öffnet sich der Dialog:
+Die Oberfläche ist auf **Deutsch oder Englisch** – automatisch passend zur Sprache von Anki
+(einstellbar über `"language"` in der Konfiguration).
+
+Beim ersten Mal pro Notiztyp öffnet sich der Dialog; die Auswahl wird danach für den Notiztyp gemerkt:
 - **Text vorlesen aus Feld** – das Feld mit dem Fremdwort/-satz (z. B. „Back“; bei Lückentext „Text“ – die Lücken werden komplett vorgelesen).
 - **Audio einfügen in Feld** – ein Feld, das **nur auf der Rückseite** steht (z. B. „Back“, „Back Extra“ oder ein eigenes Feld „Audio“). Felder der Vorderseite werden abgelehnt, damit das Audio nichts verrät.
+- **Audio einfügen** (nur bei Lückentext) – in ein Feld der Rückseite oder direkt in die Lücke (siehe unten).
 - **Sprache / Akzent** – z. B. Englisch (Britisch / Amerikanisch / Australisch / Indisch …), Französisch (Frankreich / Kanada), Spanisch (Spanien / Mexiko), Portugiesisch (Brasilien / Portugal) u. v. m.
 
 ### Audio direkt in die Lücke (Lückentext)
@@ -44,8 +48,8 @@ automatisch
 
 Ein extra Feld brauchst du dafür nicht. Weil die Lücke auf der Vorderseite verdeckt ist, hörst
 du das Audio erst nach dem Aufdecken. Unter **„Vorlesen“** wählst du:
-- **Ganzen Satz vorlesen** – „Stop being so petty.“
-- **Nur das Lückenwort vorlesen** – „petty“ (jede Lücke bekommt ihr eigenes Audio)
+- **Ganzen Satz** – „Stop being so petty.“
+- **Nur das Lückenwort** – „petty“ (jede Lücke bekommt ihr eigenes Audio)
 
 Hinweis: Hat eine Notiz mehrere Lücken-*Nummern* (`c1`, `c2` …), ist auf der Karte für c1
 die Lücke c2 als normaler Text sichtbar, und deren Audio würde schon auf der Vorderseite
@@ -79,7 +83,7 @@ wo auch Bilder und andere Audios deiner Karten liegen:
 
 ## Dienste
 - **Google Translate** (Standard): kostenlos, kein Schlüssel. Der Akzent wird über die regionale Google-Domain gewählt (`translate.google.co.uk` = britisch, `.com` = amerikanisch …). Inoffizielle Schnittstelle – kann sich ändern.
-- **Google Cloud Text-to-Speech**: offizielle API mit sehr guten Stimmen pro Dialekt. API-Schlüssel unter *Extras → Add-ons → Konfiguration* eintragen und `"provider": "google_cloud"` setzen (oder im Dialog wählen).
+- **Google Cloud Text-to-Speech**: offizielle API mit sehr guten Stimmen pro Dialekt. API-Schlüssel unter *Extras → Add-ons → Konfiguration* eintragen und `"provider": "google_cloud"` setzen.
 
 ## Sicherheit
 Alle Downloads laufen über einen gehärteten HTTPS-Client:

@@ -11,7 +11,8 @@ foreign word or sentence, in the language and **accent** you choose (for example
 American English). The audio is placed in a field on the **back** of the card, so it only
 plays after you reveal the card or answer the cloze.
 
-> Note: the add-on's user interface is in German.
+> The user interface is available in **English and German** and follows Anki's language
+> automatically (configurable via `"language"` in the add-on config).
 
 ## Installation
 1. Run `./scripts/build.sh` → `dist/pronunciation_tts.ankiaddon`
@@ -30,13 +31,14 @@ Two speaker buttons appear in the editor:
 | 🔊 | `Ctrl+Alt+P` | Insert pronunciation right away (using the remembered settings) |
 | 🔊⚙ | `Ctrl+Alt+Shift+P` | Choose fields, language/accent and service |
 
-The first time you use it for a note type, a dialog opens:
-- **Text vorlesen aus Feld** (read text from field): the field holding the foreign word or sentence (e.g. "Back"; for clozes "Text", where the whole sentence is read, answers included).
-- **Audio einfügen in Feld** (insert audio into field): a field that is shown **only on the back** (e.g. "Back", "Back Extra" or your own "Audio" field). Front-side fields are refused so the audio can't give the answer away.
-- **Sprache / Akzent** (language / accent): e.g. English (British / American / Australian / Indian …), French (France / Canada), Spanish (Spain / Mexico), Portuguese (Brazil / Portugal) and many more.
+The first time you use it for a note type, a dialog opens; your choices are then remembered for that note type:
+- **Read text from field**: the field holding the foreign word or sentence (e.g. "Back"; for clozes "Text", where the whole sentence is read, answers included).
+- **Insert audio into field**: a field that is shown **only on the back** (e.g. "Back", "Back Extra" or your own "Audio" field). Front-side fields are refused so the audio can't give the answer away.
+- **Insert audio** (cloze note types only): into a back-side field or directly into the cloze (see below).
+- **Language / accent**: e.g. English (British / American / Australian / Indian …), French (France / Canada), Spanish (Spain / Mexico), Portuguese (Brazil / Portugal) and many more.
 
 ### Audio directly inside the cloze
-For cloze notes, choose **"Direkt in die Lücke (im Lückentext)"** under "Audio einfügen". Then
+For cloze notes, choose **"Directly into the cloze"** under "Insert audio". Then
 
     Stop being so {{c1::petty::kleinlich}}.
 
@@ -45,9 +47,9 @@ automatically becomes
     Stop being so {{c1::petty [sound:pron_en-GB_….mp3]::kleinlich}}.
 
 You don't need an extra field. The cloze is hidden on the front, so you only hear the audio
-after revealing it. Under **"Vorlesen"** (read aloud) you choose:
-- **Ganzen Satz** (whole sentence): "Stop being so petty."
-- **Nur das Lückenwort** (cloze word only): "petty" (each cloze gets its own audio)
+after revealing it. Under **"Read aloud"** you choose:
+- **Whole sentence**: "Stop being so petty."
+- **Cloze word only**: "petty" (each cloze gets its own audio)
 
 Caveat: if a note has several cloze *numbers* (`c1`, `c2` …), the card for c1 shows c2 as
 plain text, so c2's audio would already play on the front. The add-on asks before inserting
@@ -79,7 +81,7 @@ and other audio of your cards:
 
 ## Services
 - **Google Translate** (default): free, no key. The accent is selected through the regional Google domain (`translate.google.co.uk` = British, `.com` = American …). This is an unofficial interface and may change.
-- **Google Cloud Text-to-Speech**: the official API with high-quality voices per dialect. Enter your API key under *Tools → Add-ons → Config* and set `"provider": "google_cloud"` (or choose it in the dialog).
+- **Google Cloud Text-to-Speech**: the official API with high-quality voices per dialect. Enter your API key under *Tools → Add-ons → Config* and set `"provider": "google_cloud"`.
 
 ## Security
 All downloads go through a hardened HTTPS client:

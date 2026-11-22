@@ -175,7 +175,7 @@ def test_refuses_front_side_target(col, integration):
     note = col.new_note(col.models.by_name("Cloze"))
     note["Text"] = "{{c1::x}}"
     ei._run(_editor(note, True), note, ei.NoteTypeSettings("Text", "Text", "en-US"), integration.cfg)
-    assert integration.warnings and "Vorderseite" in integration.warnings[0]
+    assert integration.warnings and "front" in integration.warnings[0]
     assert integration.provider.calls == [] or integration.provider.calls[-1][0] != "x"
 
 
@@ -263,7 +263,7 @@ def test_audio_inside_cloze_requires_cloze_field(col, integration):
     note["Back Extra"] = "y"
     s = ei.NoteTypeSettings("Back Extra", "Text", "en-US", placement="cloze")
     ei._run(_editor(note, True), note, s, integration.cfg)
-    assert integration.warnings and "Lückentext-Feld" in integration.warnings[0]
+    assert integration.warnings and "cloze field" in integration.warnings[0]
 
 
 def test_dialog_cloze_placement(col, integration):

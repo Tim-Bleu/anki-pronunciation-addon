@@ -17,7 +17,8 @@ from aqt.utils import askUser, showWarning, tooltip
 
 from . import core
 from .dialog import NoteTypeSettings, SettingsDialog
-from .providers import PROVIDER_IDS, TTSError, make_provider
+from .i18n import resolve_language, set_language, tr
+from .providers import TTSError, make_provider
 from .text import field_to_speech_text
 from .voices import DEFAULT_VOICE_ID, get_voice, is_known_voice
 
@@ -61,15 +62,12 @@ def _stored_settings(cfg: dict, nt: dict, fields: list[str]) -> NoteTypeSettings
             target=str(raw["target"]),
             voice=str(raw["voice"]),
             slow=bool(raw.get("slow", False)),
-            provider=str(raw.get("provider", cfg.get("provider", "google_translate"))),
             placement=str(raw.get("placement", core.PLACEMENT_FIELD)),
             cloze_text=str(raw.get("cloze_text", core.CLOZE_TEXT_SENTENCE)),
         )
     except (KeyError, TypeError):
         return None
     if s.source not in fields or s.target not in fields or not is_known_voice(s.voice):
-        return None
-    if s.provider not in PROVIDER_IDS:
         return None
     if s.placement not in (core.PLACEMENT_FIELD, core.PLACEMENT_CLOZE):
         return None
@@ -85,10 +83,7 @@ def _default_settings(cfg: dict, fields, fronts, backs, is_cloze) -> NoteTypeSet
     voice = cfg.get("default_voice", DEFAULT_VOICE_ID)
     if not is_known_voice(voice):
         voice = DEFAULT_VOICE_ID
-    provider = cfg.get("provider", "google_translate")
-    if provider not in PROVIDER_IDS:
-        provider = "google_translate"
-    return NoteTypeSettings(source, target, voice, bool(cfg.get("slow", False)), provider)
+    return NoteTypeSettings(source, target, voice, bool(cfg.get("slow", False)))
 
 
 # ---------------------------------------------------------------- button actions
@@ -118,9 +113,8 @@ def on_settings(editor: Editor) -> None:
     if not dlg.exec():
         return
     settings = dlg.result_settings()
-    if dlg.remember.isChecked():
-        cfg["note_types"][str(nt["id"])] = asdict(settings)
-        write_config(cfg)
+    cfg["note_types"][str(nt["id"])] = asdict(settings)
+    write_config(cfg)
     _run(editor, note, settings, cfg)
 
 
@@ -131,22 +125,14 @@ def _run(editor: Editor, note: Note, settings: NoteTypeSettings, cfg: dict) -> N
 
     if settings.placement == core.PLACEMENT_CLOZE:
         if not is_cloze or not core.field_is_cloze_rendered(settings.source, fronts):
-            showWarning(
-                f"„{settings.source}“ ist kein Lückentext-Feld. Bitte über den zweiten "
-                "Lautsprecher-Knopf ein anderes Feld oder einen anderen Einfügeort wählen.",
-                parent=editor.widget,
-            )
+            showWarning(tr("ed.not_cloze_field", f=settings.source), parent=editor.widget)
             return
         answers = core.cloze_answers(source_html)
         if not answers:
-            tooltip(f"Im Feld „{settings.source}“ wurde keine Lücke ({{{{c1::…}}}}) gefunden.", parent=editor.widget)
+            tooltip(tr("ed.no_cloze", f=settings.source), parent=editor.widget)
             return
         if len({n for n, _ in answers}) > 1 and not askUser(
-            "Diese Notiz hat mehrere Lücken-Nummern (c1, c2 …). Auf der Karte einer Lücke sind "
-            "die anderen Lücken sichtbar – deren Audio wäre dort schon auf der Vorderseite zu hören.\n\n"
-            "Trotzdem in die Lücken einfügen?",
-            parent=editor.widget,
-            defaultno=True,
+            tr("ed.multi_cloze"), parent=editor.widget, defaultno=True
         ):
             return
         if settings.cloze_text == core.CLOZE_TEXT_WORD:
@@ -155,23 +141,18 @@ def _run(editor: Editor, note: Note, settings: NoteTypeSettings, cfg: dict) -> N
             texts = [field_to_speech_text(source_html)]
     else:
         if core.field_on_front(settings.target, fronts):
-            showWarning(
-                f"Das Zielfeld „{settings.target}“ ist auf der Vorderseite sichtbar. "
-                "Das Audio würde vor dem Aufdecken abgespielt. Bitte ein anderes Zielfeld wählen "
-                "(zweiter Lautsprecher-Knopf).",
-                parent=editor.widget,
-            )
+            showWarning(tr("ed.target_on_front", f=settings.target), parent=editor.widget)
             return
         texts = [field_to_speech_text(source_html)]
 
     texts = list(dict.fromkeys(t for t in texts if t))  # unique, keep order
     if not texts:
-        tooltip(f"Das Feld „{settings.source}“ ist leer.", parent=editor.widget)
+        tooltip(tr("ed.empty", f=settings.source), parent=editor.widget)
         return
 
     try:
         voice = get_voice(settings.voice)
-        provider = make_provider({**cfg, "provider": settings.provider})
+        provider = make_provider(cfg)
     except (KeyError, TTSError) as e:
         showWarning(str(e), parent=editor.widget)
         return
@@ -198,15 +179,15 @@ def _run(editor: Editor, note: Note, settings: NoteTypeSettings, cfg: dict) -> N
         _apply(editor, note, field, lambda current: transform(current, stored))
         if cfg.get("play_after_insert", True):
             av_player.play_tags([SoundOrVideoTag(filename=f) for f in stored.values()])
-        tooltip("Aussprache eingefügt.", parent=editor.widget)
+        tooltip(tr("ed.done"), parent=editor.widget)
 
     def on_failure(exc: Exception) -> None:
-        showWarning(f"Aussprache konnte nicht erstellt werden:\n\n{exc}", parent=editor.widget)
+        showWarning(tr("ed.failed", err=exc), parent=editor.widget)
 
     (
         QueryOp(parent=editor.widget, op=op, success=on_success)
         .failure(on_failure)
-        .with_progress("Aussprache wird sicher heruntergeladen …")
+        .with_progress(tr("ed.progress"))
         .run_in_background()
     )
 
@@ -239,7 +220,7 @@ def _add_buttons(buttons: list[str], editor: Editor) -> None:
             icon=ICON,
             cmd="pronunciation_tts_generate",
             func=on_generate,
-            tip=f"Aussprache einfügen ({cfg.get('shortcut_generate', '')})",
+            tip=tr("ed.tip_generate", keys=cfg.get("shortcut_generate", "")),
             keys=cfg.get("shortcut_generate") or None,
         )
     )
@@ -248,11 +229,16 @@ def _add_buttons(buttons: list[str], editor: Editor) -> None:
             icon=ICON_SETTINGS,
             cmd="pronunciation_tts_settings",
             func=on_settings,
-            tip=f"Aussprache: Felder und Akzent wählen ({cfg.get('shortcut_settings', '')})",
+            tip=tr("ed.tip_settings", keys=cfg.get("shortcut_settings", "")),
             keys=cfg.get("shortcut_settings") or None,
         )
     )
 
 
 def setup() -> None:
+    try:
+        from anki.lang import current_lang
+    except ImportError:  # pragma: no cover
+        current_lang = "en"
+    set_language(resolve_language(get_config().get("language", "auto"), current_lang))
     gui_hooks.editor_did_init_buttons.append(_add_buttons)

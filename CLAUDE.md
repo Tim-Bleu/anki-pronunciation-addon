@@ -13,7 +13,8 @@ is answered – never on the question side.
 pronunciation_tts/        the add-on package (this folder is what gets zipped)
   __init__.py             only wires the GUI when running inside Anki
   editor_integration.py   editor buttons + shortcuts, QueryOp background download, config  [aqt]
-  dialog.py               settings dialog (source field, target field, voice, provider)  [aqt]
+  dialog.py               settings dialog (source field, placement/target, voice, slow) [aqt]
+  i18n.py                 English/German UI strings, `tr()`                               [pure]
   core.py                 media filename, sound-tag insertion, template/front-side analysis [pure]
   providers.py            Google Translate (no key) + Google Cloud TTS (API key)           [pure]
   net.py                  hardened HTTPS client – the ONLY place allowed to do network I/O [pure]
@@ -55,7 +56,9 @@ All downloads go through `net.request`. Never use `urllib`, `requests`,
 - Re-running replaces only this add-on's own tags (`[sound:pron_….mp3]`), never user audio.
 - Same text+voice+speed+provider → same filename → cached, no new download.
 - Network work runs in `QueryOp` (background thread); UI/note changes only in `success`.
-- UI strings are German.
+- All user-visible strings go through `i18n.tr(key)`; every key needs `en` and `de` (enforced by
+  `tests/test_i18n.py`). Language: config `language` = `auto` (follows Anki: `de*` → German, else English) / `en` / `de`.
+- Keep the dialog minimal: fields, placement (cloze note types only), accent, slow. Service/API key live in the config.
 
 ## Commands
 ```bash

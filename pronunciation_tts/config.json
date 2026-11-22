@@ -1,4 +1,5 @@
 {
+    "language": "auto",
     "provider": "google_translate",
     "default_voice": "en-GB",
     "slow": false,
