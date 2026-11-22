@@ -1,5 +1,11 @@
 # Aussprache per Knopfdruck – Anki-Add-on
 
+🇬🇧 [English version](README.en.md)
+
+> **Über dieses Projekt:** Das ist mein erstes Vibe-Coding-Projekt. Ich nutze es, um die
+> Möglichkeiten von KI-Assistenten beim Programmieren kennenzulernen und mit der Zeit
+> mitzuhalten. Der Code ist größtenteils KI-generiert und von mir angeleitet.
+
 Fügt beim Erstellen oder Bearbeiten einer Karte per Klick eine **Aussprache-Audiodatei**
 für das Fremdwort / den Fremdsatz ein – in der gewählten Sprache und dem gewählten
 **Akzent** (z. B. britisches oder amerikanisches Englisch). Das Audio wird in ein Feld
@@ -53,6 +59,23 @@ Rückseite der passenden Kartenvorlage ein.
 
 Anki spielt Audio auf der Rückseite automatisch ab, solange in den Stapel-Optionen
 „Audio nicht automatisch abspielen“ deaktiviert ist.
+
+## Wo werden die Audiodateien gespeichert?
+Im ganz normalen **Medienordner deiner Anki-Sammlung** (`collection.media`), also dort,
+wo auch Bilder und andere Audios deiner Karten liegen:
+
+| System | Ordner |
+|---|---|
+| Windows | `%APPDATA%\Anki2\<Profilname>\collection.media` |
+| macOS | `~/Library/Application Support/Anki2/<Profilname>/collection.media` |
+| Linux | `~/.local/share/Anki2/<Profilname>/collection.media` |
+
+`<Profilname>` ist meist `Benutzer 1` bzw. `User 1`. Den Profilordner öffnest du in Anki über
+*Datei → Profile wechseln → Profilordner öffnen*; darin liegt `collection.media`.
+
+- Die Dateien heißen `pron_<Sprache>_<Kennung>.mp3`, z. B. `pron_en-GB_3f9c….mp3`.
+- Sie werden wie alle Medien über **AnkiWeb synchronisiert**, sind also auch auf dem Handy (AnkiDroid / AnkiMobile) verfügbar.
+- Wird eine Karte gelöscht oder das Audio ersetzt, bleibt die alte Datei zunächst liegen. *Extras → Medien überprüfen* zeigt ungenutzte Dateien an und kann sie löschen.
 
 ## Dienste
 - **Google Translate** (Standard): kostenlos, kein Schlüssel. Der Akzent wird über die regionale Google-Domain gewählt (`translate.google.co.uk` = britisch, `.com` = amerikanisch …). Inoffizielle Schnittstelle – kann sich ändern.
