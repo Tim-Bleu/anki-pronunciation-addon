@@ -15,10 +15,19 @@ plays after you reveal the card or answer the cloze.
 > automatically (configurable via `"language"` in the add-on config).
 
 ## Installation
-1. Run `./scripts/build.sh` → `dist/pronunciation_tts.ankiaddon`
-   (on Windows without bash: zip the *contents* of the `pronunciation_tts` folder and rename the `.zip` to `.ankiaddon`).
-2. In Anki: *Tools → Add-ons → Install from file…* and pick the file.
+
+**Easiest – download the ready-made file:**
+1. On GitHub, open the latest version under **Releases** and download
+   `pronunciation_tts.ankiaddon`.
+2. Double-click the file and Anki installs it. (Or in Anki: *Tools → Add-ons →
+   Install from file…* and pick the file.)
 3. Restart Anki.
+
+**Build it yourself** (e.g. for the latest state; only Python needed):
+- Windows: double-click `build.py`.
+- macOS / Linux: run `python3 build.py` in the project folder.
+
+The file ends up in `dist/pronunciation_tts.ankiaddon`.
 
 (Alternatively, copy the `pronunciation_tts` folder into Anki's add-on folder:
 *Tools → Add-ons → View Files*.)

@@ -24,7 +24,8 @@ pronunciation_tts/        the add-on package (this folder is what gets zipped)
   config.json / config.md default config + docs shown in Anki's config editor
   manifest.json           metadata for .ankiaddon installs
 tests/                    pytest; test_anki_integration.py needs real anki+aqt (else skipped)
-scripts/build.sh          builds dist/pronunciation_tts.ankiaddon
+build.py                  builds dist/pronunciation_tts.ankiaddon (stdlib only, cross-platform)
+.github/workflows/build.yml  CI: tests + build on push/PR; attaches the file to published releases
 ```
 Modules marked **[pure]** must never import `aqt` or `anki` – that keeps them
 unit-testable without Anki.
@@ -64,9 +65,13 @@ All downloads go through `net.request`. Never use `urllib`, `requests`,
 ```bash
 python3 -m pytest -q                                   # pure tests
 pip install anki aqt[qt6] && QT_QPA_PLATFORM=offscreen python -m pytest -q tests/test_anki_integration.py
-./scripts/build.sh                                     # → dist/pronunciation_tts.ankiaddon
+python3 build.py                                       # → dist/pronunciation_tts.ankiaddon
 ```
 Target: Anki ≥ 23.10 (`min_point_version` 231000), Python ≥ 3.9 syntax with `from __future__ import annotations`.
+
+## Releasing
+Create a GitHub release (new tag, e.g. `v1.0.0`); the workflow attaches `pronunciation_tts.ankiaddon`.
+The same file can be uploaded to AnkiWeb (ankiweb.net/shared/addons).
 
 ## Possible next steps
 - Batch mode in the browser (generate for all selected notes).
